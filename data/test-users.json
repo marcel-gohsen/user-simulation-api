@@ -1,0 +1,76 @@
+[
+  {
+    "id": "f3333f5c-8313-4941-beea-f24de25a583a",
+    "ptkb": [
+        "You graduated from Tilburg University.",
+        "You live in the Netherlands.",
+        "You are allergic to peanuts.",
+        "You worked as a web developer for 2 years.",
+        "You have a bachelor's degree in computer science.",
+        "You like Indian food.",
+        "Your bachelor's GPA is 5.6.",
+        "You are 26 years old.",
+        "Your TOEFL SCORE is 91.",
+        "Bachelor courses that you liked include data structures, algorithms, data mining, and artificial intelligence.",
+        "Bachelor courses that you hated include computer architecture and logical circuits courses."
+    ],
+    "topics": {
+      "1-1": [
+          "Which universities offer a Master's computer science program in the Netherlands?",
+          "Which of the universities that offer Master's computer science program in the Netherlands have the lowest fees?",
+          "Which programs put a focus on courses that I liked during my Bachelors?",
+          "Which scholarship options exist if I would decide to study at the University of Amsterdam?",
+          "Is the University of Amsterdam better than TU Delft?"
+      ]
+    }
+  },
+
+
+  {
+    "id": "b5cf330d-0e92-469f-bf16-2dd49313b894",
+    "ptkb": [
+      "You don't like crazy cold weather.",
+      "You don't have a driver's licence.",
+      "You plan to move to Canada.",
+      "You are from the Netherlands.",
+      "You are used to heavy rains in the Netherlands.",
+      "You graduated from UvA.",
+      "You have a Bachelor's degree in Computer Science.",
+      "You speak English fluently."
+    ],
+    "topics": {
+      "1-1": [
+        "What universities offer a Master's program in computer science in Canada?",
+        "What is studying in Canada like?",
+        "What do I have to know when migrating to Canada from my home country?",
+        "Which elite universities exist in Canada?",
+        "What are the requirements to study abroad?"
+      ]
+    }
+  },
+
+  {
+    "id": "49b3c201-0d2c-4cc1-ab55-d712f4926410",
+    "ptkb": [
+        "You like sightseeing.",
+        "You hate long flights.",
+        "You're a big Lakers fan.",
+        "You live in the United States.",
+        "You are partially disabled.",
+        "You're 35 years old.",
+        "You enjoy shopping.",
+        "You occasionally smoke and drink.",
+        "You're interested in the culture and history of different countries.",
+        "You dislike hot weather."
+    ],
+    "topics": {
+      "2-1": [
+        "What is the shortest way to get to Doha?",
+        "What tourist attractions are there in Doha?",
+        "Which attractions in Doha are disability-friendly?",
+        "What is the climate in Doha like?",
+        "What are must-have souvenirs from Doha?"
+      ]
+    }
+  }
+]

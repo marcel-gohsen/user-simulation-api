@@ -1,0 +1,42 @@
+[project]
+name = "sim-api"
+version = "0.0.1"
+description = ""
+authors = [
+    {name = "Marcel Gohsen",email = "marcel.gohsen@uni-weimar.de"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi[uvicorn] (>=0.115.12,<0.116.0)",
+    "passlib[bcrypt] (>=1.7.4,<1.8.0)",
+    "bcrypt (==4.0.1)",
+    "pyyaml (==6.0.2)",
+    "watchdog (==6.0.0)",
+    "transformers (>=4.51.3,<4.52.0)",
+    "torch (>=2.6.0,<2.7.0)",
+    "accelerate (>=1.6.0,<1.7.0)",
+    "bitsandbytes (>=0.45.5,<0.46.0)",
+    "huggingface-hub (>=0.30.2,<0.31.0)",
+    "sentence-transformers (>=5.2.2,<6.0.0)",
+    "httpx (==0.28.1)",
+    "uvicorn (==0.35.0)",
+    "huggingface-hub[hf-xet] (==0.30.2)",
+    "pydantic (==2.11.7)",
+    "spacy (==3.8.7)",
+    "openai (==1.97.1)",
+]
+
+[tool.poetry]
+packages = [
+    { include = "*", from = "src" }
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.2,<10.0.0)"
+]

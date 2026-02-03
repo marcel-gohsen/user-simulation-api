@@ -1,0 +1,56 @@
+api:
+  version: 1.1.4
+  title: "TREC iKAT - Simulation API"
+  description: "This API serves as a debugging tool for your conversational agents as well as for submitting your entries for the interactive task at TREC iKAT 2025. For more information on this check the [task guidelines](https://www.trecikat.com/guidelines/)."
+  root_path: "/simulation"
+  contact:
+    name: "TREC iKAT Organizer"
+    url: "https://www.trecikat.com/"
+    email: "trec.ikat.ai@gmail.com"
+
+  debug:
+    name: "debug"
+    limits:
+      value: 100
+      unit: sessions
+    docs:
+      start:
+        summary: "NOT EVALUATED | Initialize a test run and receive first user utterance."
+      continue:
+        summary: "NOT EVALUATED | Submit system response und receive next user utterance."
+      session:
+        summary: "Get the dialog history of the current session."
+
+
+  run:
+    name: "run"
+    limits:
+      value: 100
+      unit: runs
+    docs:
+      start:
+        summary: "Initialize a run and receive first user utterance."
+      continue:
+        summary: "Submit system response und receive next user utterance."
+      session:
+        summary: "Get the dialog history of the current session."
+      status:
+        summary: "Get information about the status and progress of one of your runs."
+      dump:
+        summary: "Produce a run file for one of your runs for you to review."
+
+  auth:
+    name: "auth"
+    docs:
+      verify:
+        summary: "Verify if your API token is valid."
+
+  budget:
+    name: "budget"
+    docs:
+      check:
+        summary: "Check how much compute budget is left for debug and run APIs."
+
+simulation:
+  num_retries: 3
+  rubric_threshold: 3
