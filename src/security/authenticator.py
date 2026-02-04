@@ -34,10 +34,35 @@ class Authenticator:
 
         return base64.b64encode(token.encode()).decode()
 
+    def rm_team(self, _id: str):
+        _ = self.db_connection.execute(
+            "DELETE FROM requests WHERE team_id = ?;",
+            (_id,)
+        )
+
+        _ = self.db_connection.execute(
+            "DELETE FROM runs WHERE team_id = ?;",
+            (_id,)
+        )
+
+        _ = self.db_connection.execute(
+            "DELETE FROM teams WHERE id = ?;",
+            (_id,)
+        )
+
+        self.db_connection.commit()
+
     def add_admin(self, name: str, password: str):
         _ = self.db_connection.execute(
             "INSERT OR IGNORE INTO admins VALUES (?, ?);",
             (name, self.pwd_context.hash(password)),
+        )
+        self.db_connection.commit()
+
+    def rm_admin(self, name: str):
+        _ = self.db_connection.execute(
+            "DELETE FROM admins WHERE name = ?;",
+            (name,)
         )
         self.db_connection.commit()
 

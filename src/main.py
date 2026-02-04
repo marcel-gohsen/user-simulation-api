@@ -47,12 +47,11 @@ def main(admin_name: str, admin_password: str):
         admin_password = None
 
     # ensure our database schema is created here
-    if not os.path.exists(DATABASE_PATH):
-        os.makedirs(os.path.dirname(DATABASE_PATH))
-        with open(SCHEMA_PATH, "r") as in_file:
-            with sqlite3.connect(DATABASE_PATH) as conn:
-                _ = conn.executescript(in_file.read())
-                conn.commit()
+    os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+    with open(SCHEMA_PATH, "r") as in_file:
+        with sqlite3.connect(DATABASE_PATH) as conn:
+            _ = conn.executescript(in_file.read())
+            conn.commit()
 
     if admin_name is not None and admin_password is not None:
         from security.authenticator import Authenticator

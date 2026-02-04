@@ -28,7 +28,7 @@ class User(metaclass=abc.ABCMeta):
 
 
 class PTKBUserWithGuidance(User):
-    llm = HFModelQuantized(LLMVersion.Gemma_3_4B_IT, quantization=Precision.NF4)
+    llm = None
     st_model = SentenceTransformer("all-mpnet-base-v2")
 
     base_prompt = ("You are a user of a search system and are interested in \"{topic}\". "
@@ -59,6 +59,9 @@ class PTKBUserWithGuidance(User):
         self.topics = topics
         self.subtopics = subtopics
         self.ptkb = ptkb
+
+        if PTKBUserWithGuidance.llm is None:
+            PTKBUserWithGuidance.llm = HFModelQuantized(LLMVersion.Gemma_3_4B_IT, quantization=Precision.NF4)
 
     def initiate(self, topic_id: str) -> Tuple[str, str]:
         topic = self.topics[topic_id]
@@ -180,7 +183,7 @@ class PTKBUserWithGuidance(User):
 
 
 class PTKBUserWithoutGuidance(User):
-    llm = HFModelQuantized(LLMVersion.Gemma_3_4B_IT, quantization=Precision.NF4)
+    llm = None
 
     base_prompt = ("You are a user of a search system and are interested in \"{topic}\". "
                    "Your goal is to find out as much as possible about the topic. "
@@ -198,6 +201,8 @@ class PTKBUserWithoutGuidance(User):
         self.topics = topics
         self.subtopics = subtopics
         self.ptkb = ptkb
+        if PTKBUserWithoutGuidance.llm is None:
+            PTKBUserWithoutGuidance.llm = HFModelQuantized(LLMVersion.Gemma_3_4B_IT, quantization=Precision.NF4)
 
     def initiate(self, topic_id: str) -> Tuple[str, Optional[str]]:
         topic = self.topics[topic_id]
@@ -259,7 +264,7 @@ class PTKBUserWithoutGuidance(User):
 
 
 class OpenAIPTKBUserWithGuidance(PTKBUserWithGuidance):
-    llm = OpenAIModel(OpenAIModelVersion.GPT_4_1)
+    llm = None
 
     base_prompt = ("You are a user of a search system and are interested in \"{topic}\". "
                    "Your goal is to find out as much as possible about the topic. "
@@ -287,9 +292,16 @@ class OpenAIPTKBUserWithGuidance(PTKBUserWithGuidance):
 
     answer_rating_gen_kwargs = {"max_completion_tokens": 1, "n": 1}
 
+    def __init__(self, _id, topics: Dict[str, Topic], subtopics: Dict[str, List[str]], ptkb: List[str]):
+        super().__init__(_id, topics, subtopics, ptkb)
+
+        if OpenAIPTKBUserWithGuidance.llm is None:
+            OpenAIPTKBUserWithGuidance.llm = OpenAIModel(OpenAIModelVersion.GPT_4_1)
+
+
 
 class OpenAIPTKBUserWithoutGuidance(PTKBUserWithoutGuidance):
-    llm = OpenAIModel(OpenAIModelVersion.GPT_4_1)
+    llm = None
 
     base_prompt = ("You are a user of a search system and are interested in \"{topic}\". "
                    "Your goal is to find out as much as possible about the topic. "
@@ -302,5 +314,11 @@ class OpenAIPTKBUserWithoutGuidance(PTKBUserWithoutGuidance):
                    "\n\nYou have the following properties:\n- {property_list}")
 
     gen_kwargs = {"max_completion_tokens": 128, "n": 5}
+
+    def __init__(self, _id, topics: Dict[str, Topic], subtopics: Dict[str, List[str]], ptkb: List[str]):
+        super().__init__(_id, topics, subtopics, ptkb)
+
+        if OpenAIPTKBUserWithGuidance.llm is None:
+            OpenAIPTKBUserWithGuidance.llm = OpenAIModel(OpenAIModelVersion.GPT_4_1)
 
 

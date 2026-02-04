@@ -42,7 +42,7 @@ with open(USERS_PATH, "r") as f:
         topics = {topic_id: TOPICS[topic_id]}
         trajectory = {topic_id: [row[i] for i in range(2, len(row)) if row[i].strip() != ""]}
 
-        user = simulation.user.PTKBUserWithGuidance(
+        user = simulation.user.PTKBUserWithoutGuidance(
             row[0],
             topics,
             trajectory,
@@ -51,7 +51,7 @@ with open(USERS_PATH, "r") as f:
 
         DEBUG_USERS_PER_TOPIC[topic_id] = [user]
 
-        user = simulation.user.OpenAIPTKBUserWithGuidance(
+        user = simulation.user.PTKBUserWithoutGuidance(
             row[0],
             topics,
             trajectory,
