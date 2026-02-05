@@ -1,4 +1,32 @@
-# TREC iKAT Simulation API
+# Sim.API
+
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmarcel-gohsen%2Fuser-simulation-api%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.project.version&label=version) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fmarcel-gohsen%2Fuser-simulation-api%2Frefs%2Fheads%2Fmain%2Fpyproject.toml)
+
+Sim.API is a middleware to connect participant systems and user simulators for shared tasks in conversational search. 
+
+## Deployment
+
+Sim.API can be installed either directly as a standalone python application or as a Docker container.
+
+### Option 1 (from source code)
+
+Installing from source code requires [Poetry](https://python-poetry.org/) to be installed. 
+
+```shell
+poetry install
+```
+
+The server can be started with the following command. Provide the credentials of an admin account, which can be used to register new teams. The shared task name can be configured by the organizers.
+```shell
+poetry run serve --admin-name <name> --admin-password <password> --shared-task <name>
+```
+
+### Option 2 (from Docker image)
+
+TBD.
+
+
+## Example Instructions for Participants
 
 In TREC iKAT Year 3, we offer an interactive task in which a simulated user sends out utterances to participants' systems. For more information on this task please check [the guidelines](https://www.trecikat.com/guidelines/).
 
@@ -8,7 +36,7 @@ This API can be used for two main purposes:
 
 The API is available at [https://trec-ikat25.webis.de/simulation/](https://trec-ikat25.webis.de/simulation/). From there you will be redirected to a reference of all provided endpoints and their expected in- and outputs.
 
-## Authentication
+### Authentication
 
 Participants need to be registered to TREC iKAT in order to use this API. You can use [this form](https://ir.nist.gov/evalbase/accounts/login/?next=/evalbase/) to do so. As a result, participants will receive a base64-encoded access token. 
 
@@ -24,13 +52,13 @@ If your token is valid, the API will respond with:
 {"team_id":  "<TEAM_ID>"}
 ```
 
-## Submitting Runs
+### Submitting Runs
 
 <span style="color: red">**Important:**</span> With the following information the final participant runs will be submitted. For debugging and developing participant systems refer to [this information below](#debugging--testing-a-system).  
 
 Conversations are always user-initiated. In a first step, participants submit meta-information about their run and receive the first user utterance for the first topic. From there, participants and the simulated user take turns in responding to each other's utterances. Users terminate the conversations and switch topics automatically.
 
-### 1. Starting a Run
+#### 1. Starting a Run
 
 Participants start a run by providing the following run meta-information and in turn receive the first user utterance for the first topic. 
 
@@ -74,7 +102,7 @@ Responses contain the following fields:
 * `last_response_of_session`: Flag that indicates that the current session (for the current topic) is terminated by the user. If true, the next response will be about a new topic. 
 * `last_response_of_run`: Flag that indicates that the current session is terminated by the user and that there are no open topics left. If true, your run is completed and successfully submitted.  
 
-### 2. Responding to User Utterances
+#### 2. Responding to User Utterances
 
 After a run is started like shown above, participants receive the first user utterance. From now until the run is completed, participants respond to user utterances by calling the `run/continue` endpoint. Participants should always provide the following information: 
 * `run_id`: The chosen identifier for the run.
@@ -116,21 +144,21 @@ Successful requests always result in responses formatted as mentioned above.
 }
 ```
 
-### 3. Switching Topics
+#### 3. Switching Topics
 
 There is no way to manually end the current conversation and move on to the next topic. The (simulated) user is responsible for that decision. This decision is indicated by the flag `last_response_of_session`. If this flag is true, the next call to the `run/continue` endpoint will result in the initial user utterance for the next topic. 
 
 **Important**: If participants provide a response at the turn after this flag becomes true, this response will be ignored. The `response` field can be an empty string or `null` in this case.
 
-### 4. Finishing a Run
+#### 4. Finishing a Run
 
 When the (simulated) users inquired about all topics in the dataset, the flag `last_response_of_run` will become true. This indicates that the run is done. Further requests after this flag becomes true will lead to errors.
 
-### Limits
+#### Limits
 
 Participants can submit up to two runs. Incomplete runs will be evaluated as well. Missing topics will be assessed with a performance of zero.   
 
-## Debugging / Testing a System
+### Debugging / Testing a System
 
 Participants can also use the API for debugging and testing their systems. To this end, there are equivalent endpoints that emulate a run submission. 
 
@@ -141,7 +169,7 @@ These two endpoints expect the exact same inputs as their run submission counter
 
 **Important:** Responses submitted to the debugging endpoints will not be evaluated. 
 
-### Budget for Requests
+#### Budget for Requests
 
 Participants are allowed a limited number of requests for the debugging of their systems. The exact number of requests is to be determined. 
 
@@ -153,9 +181,9 @@ curl -H "Authorization: Bearer <token>" "https://trec-ikat25.webis.de/simulation
 
 
 
-## Monitor Submission Progress
+### Monitor Submission Progress
 
-### Check Run Status
+#### Check Run Status
 
 Participants can check the status of their runs to make sure that everything worked as expected. The following request can be used to check the status.
 
@@ -181,7 +209,7 @@ Responses contain the following fields:
 * `open_topics`: A list of topic ids that still need to be worked on to reach the `complete` status.
 * `done_topics`: A list of topic ids of topics that were already completed in this run. 
 
-### Dump Run File
+#### Dump Run File
 
 For your own documentation you can get a copy of the run submission file. 
 
@@ -241,6 +269,6 @@ As a response, you will receive the run file in the submission format for this t
 ]
 ```
 
-## Support
+### Support
 
 In case of technical issues or other form of feedback, feel free to contact [marcel.gohsen@uni-weimar.de](mailto:marcel.gohsen@uni-weimar.de). 

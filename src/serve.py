@@ -39,9 +39,9 @@ def setup_storage(shared_task: str):
             conn.commit()
 
 @click.command()
-@click.option("--admin-name", type=str, default=None, required=False)
-@click.option("--admin-password", type=str, default=None, required=False)
-@click.option("--shared-task", type=click.Choice(SharedTaskManager().shared_tasks.keys()), default="dummy", required=True)
+@click.option("--admin-name", type=str, default=None, required=False, help="Set a username of the admin account.")
+@click.option("--admin-password", type=str, default=None, required=False, help="Set a password of the admin account.")
+@click.option("--shared-task", type=click.Choice(SharedTaskManager().shared_tasks.keys()), default="dummy", required=True, help="Select one of the preconfigured shared tasks.")
 def main(admin_name: str, admin_password: str, shared_task: str):
     format_string = "%(asctime)s - %(name)-20s - %(levelname)-7s - %(message)s"
     log_config = uvicorn.config.LOGGING_CONFIG

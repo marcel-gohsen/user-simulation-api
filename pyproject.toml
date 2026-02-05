@@ -27,6 +27,9 @@ dependencies = [
     "openai (==1.97.1)",
 ]
 
+[project.scripts]
+serve = "serve:main"
+
 [tool.poetry]
 packages = [
     { include = "*", from = "src" }
