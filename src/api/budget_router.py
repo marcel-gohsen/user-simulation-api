@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from config import CONFIG
 from security.authenticator import authenticate, Authenticator
 from security.budget_tracker import BudgetTracker, check_budget
-from data.trec_run import RunManager
+from shared_task.trec_run import RunManager
 
 router = APIRouter(
     prefix="/budget",

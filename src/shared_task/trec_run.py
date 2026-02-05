@@ -1,14 +1,16 @@
 import copy
 import json
+import os
 import sqlite3
 from dataclasses import dataclass, field
 from threading import RLock
 from typing import Dict, Optional, OrderedDict, Any, List
 
 from api.messages import RunMeta
-from config import TOPICS, DATABASE_PATH
-from data.sessions import Session
-from data.topic import Topic
+from config import DATABASE_DIR
+from shared_task.sessions import Session
+from shared_task.topic import Topic
+from shared_task.shared_task import SharedTaskManager
 
 
 @dataclass
@@ -17,7 +19,7 @@ class TRECRun:
 
     # topic_id -> session
     sessions: Dict[str, Session] = field(default_factory=dict)
-    _open_topics: OrderedDict[str, Topic] = field(default_factory=lambda: copy.deepcopy(TOPICS))
+    _open_topics: OrderedDict[str, Topic] = field(default_factory=lambda: copy.deepcopy(SharedTaskManager().active_task.topics))
 
     def next_topic(self) -> Topic:
         return self._open_topics.popitem(last=False)[1]
@@ -26,7 +28,9 @@ class TRECRun:
         return len(self._open_topics) > 0
 
     def get_progress(self):
-        done_topics = [t._id for t in TOPICS.values() if t._id not in self._open_topics]
+        task_manager = SharedTaskManager()
+        topics = task_manager.active_task.topics
+        done_topics = [t._id for t in topics.values() if t._id not in self._open_topics]
         return {"done_topics": done_topics,
                 "open_topics": [t._id for t in self._open_topics.values()]}
 
@@ -42,13 +46,15 @@ class RunManager(object):
                 if cls._debug_instance is None:
                     cls._debug_instance = super(RunManager, cls).__new__(cls, *args, **kwargs)
                     cls._debug_instance.runs = {}
-                    cls._debug_instance.db_connection = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+                    db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
+                    cls._debug_instance.db_connection = sqlite3.connect(db_path, check_same_thread=False)
                 instance = cls._debug_instance
             else:
                 if cls._instance is None:
                     cls._instance = super(RunManager, cls).__new__(cls, *args, **kwargs)
                     cls._instance.runs = {}
-                    cls._instance.db_connection = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+                    db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
+                    cls._instance.db_connection = sqlite3.connect(db_path, check_same_thread=False)
                 instance = cls._instance
 
             return instance
@@ -66,6 +72,7 @@ class RunManager(object):
 
     def get_status(self, run_id: str) -> Dict[str, Any]:
         active_run = self.get_active_run(run_id)
+        active_task = SharedTaskManager().active_task
         progress = {}
         if active_run is None:
             progress["status"] = "inactive"
@@ -73,7 +80,7 @@ class RunManager(object):
                 cursor = self.db_connection.execute(f"SELECT DISTINCT topic_id FROM requests WHERE run_id=? AND api='run'", (run_id,))
                 topic_ids = [t[0] for t in cursor.fetchall()]
             progress["done_topics"] = topic_ids
-            progress["open_topics"] = [t._id for t in TOPICS.values() if t._id not in topic_ids]
+            progress["open_topics"] = [t._id for t in active_task.topics.values() if t._id not in topic_ids]
         else:
             progress["status"] = "active"
             progress = {**progress, **active_run.get_progress()}

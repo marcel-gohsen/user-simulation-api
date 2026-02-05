@@ -1,15 +1,18 @@
 import datetime
 import json
+import os
 import sqlite3
 from typing import Literal, Optional
 
-from config import DATABASE_PATH
+from config import DATABASE_DIR
+from shared_task.shared_task import SharedTaskManager
 
 
 class RequestTracker:
 
     def __init__(self):
-        self.db_connection = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
+        self.db_connection = sqlite3.connect(db_path, check_same_thread=False)
 
 
     def register_request(self, run_id: str, team_id: str, session_id: str, topic_id: str, user_id: str,

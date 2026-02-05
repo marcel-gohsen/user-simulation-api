@@ -1,17 +1,20 @@
+import os
 import sqlite3
 
 from fastapi import HTTPException
 from starlette import status
 from typing_extensions import Literal
 
-from config import DATABASE_PATH
-from data.trec_run import RunManager
+from config import DATABASE_DIR
+from shared_task.shared_task import SharedTaskManager
+from shared_task.trec_run import RunManager
 
 
 class BudgetTracker:
 
     def __init__(self):
-        self.db_connection = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
+        self.db_connection = sqlite3.connect(db_path, check_same_thread=False)
 
 
     def get_number_of_sessions(self, team_id: str, api: Literal["debug", "run"]):

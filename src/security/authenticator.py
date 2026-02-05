@@ -1,5 +1,6 @@
 import base64
 import binascii
+import os
 import sqlite3
 from secrets import token_hex
 from typing import Annotated
@@ -9,12 +10,15 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 from passlib.context import CryptContext
 from starlette import status
 
-from config import DATABASE_PATH
+from config import DATABASE_DIR
+from shared_task.shared_task import SharedTaskManager
+
 
 class Authenticator:
 
     def __init__(self):
-        self.db_connection = sqlite3.connect(DATABASE_PATH, check_same_thread=False)
+        db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
+        self.db_connection = sqlite3.connect(db_path, check_same_thread=False)
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

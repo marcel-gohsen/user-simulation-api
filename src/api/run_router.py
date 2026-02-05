@@ -10,12 +10,13 @@ from starlette import status
 from starlette.responses import JSONResponse, Response
 
 from api.messages import UserUtterance, RunMeta, AssistantResponse
-from config import CONFIG, DEBUG_USERS_PER_TOPIC, RUN_USERS_PER_TOPIC
-from data.sessions import SessionManager
-from data.trec_run import RunManager, TRECRun
+from config import CONFIG
+from shared_task.sessions import SessionManager
+from shared_task.trec_run import RunManager, TRECRun
 from security.authenticator import authenticate
 from security.budget_tracker import check_budget
 from security.request_tracker import RequestTracker
+from shared_task.shared_task import SharedTaskManager
 
 run_router = APIRouter(
     prefix=f"/{CONFIG['api']['run']['name']}",
@@ -330,13 +331,14 @@ def init_session(run: TRECRun, debug: bool):
     if not run.has_next_topic():
         return None
 
+    task_manager = SharedTaskManager()
     topic = run.next_topic()
     topic_id = topic._id
 
     if debug:
-        user = random.choice(DEBUG_USERS_PER_TOPIC[topic_id])
+        user = random.choice(task_manager.active_task.debug_users_per_topic[topic_id])
     else:
-        user = random.choice(RUN_USERS_PER_TOPIC[topic_id])
+        user = random.choice(task_manager.active_task.users_per_topic[topic_id])
 
     session_manager = SessionManager()
     session = session_manager.create_session(run.run_meta, user, topic_id)

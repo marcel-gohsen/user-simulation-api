@@ -8,7 +8,8 @@ from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
 from api import auth_router, budget_router, run_router
-from config import CONFIG, DATABASE_PATH, SCHEMA_PATH
+from config import CONFIG, DATABASE_DIR, SCHEMA_PATH
+from shared_task.shared_task import SharedTaskManager
 
 
 def setup_app() -> FastAPI:
@@ -29,10 +30,19 @@ def setup_app() -> FastAPI:
 
     return app
 
+def setup_storage(shared_task: str):
+    os.makedirs(DATABASE_DIR, exist_ok=True)
+    with open(SCHEMA_PATH, "r") as in_file:
+        db_path = os.path.join(DATABASE_DIR, f"{shared_task}.db")
+        with sqlite3.connect(db_path) as conn:
+            _ = conn.executescript(in_file.read())
+            conn.commit()
+
 @click.command()
 @click.option("--admin-name", type=str, default=None, required=False)
 @click.option("--admin-password", type=str, default=None, required=False)
-def main(admin_name: str, admin_password: str):
+@click.option("--shared-task", type=click.Choice(SharedTaskManager().shared_tasks.keys()), default="dummy", required=True)
+def main(admin_name: str, admin_password: str, shared_task: str):
     format_string = "%(asctime)s - %(name)-20s - %(levelname)-7s - %(message)s"
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["formatters"]["access"]["fmt"] = format_string
@@ -46,12 +56,7 @@ def main(admin_name: str, admin_password: str):
     if admin_password == "":
         admin_password = None
 
-    # ensure our database schema is created here
-    os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
-    with open(SCHEMA_PATH, "r") as in_file:
-        with sqlite3.connect(DATABASE_PATH) as conn:
-            _ = conn.executescript(in_file.read())
-            conn.commit()
+    setup_storage(shared_task)
 
     if admin_name is not None and admin_password is not None:
         from security.authenticator import Authenticator
@@ -61,6 +66,9 @@ def main(admin_name: str, admin_password: str):
     else:
         logger.warning("No admin credentials provided")
 
+    task_manager = SharedTaskManager()
+    task_manager.set_active_task(shared_task)
+    task_manager.active_task.initialize()
 
     app = setup_app()
     try:

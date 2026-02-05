@@ -4,8 +4,7 @@ from pydantic.dataclasses import dataclass
 
 
 # typedef for the citation field to make annotations more concise
-# TODO: is the list[str] type valid for this field?
-CitationType = dict[StrictStr, float] | list[StrictStr] | None
+CitationType = dict[StrictStr, float] | None
 
 # Pydantic dataclasses for the API endpoints
 
@@ -46,13 +45,12 @@ class AssistantResponse:
         {123: 456} to be accepted as valid citation values (the key is auto-cast
         to string).
 
-        To prevent this from happening and to check for the expected "clueweb-..."
-        key format, this validator examines each key of a supplied dict and rejects
+        To prevent this from happening, this validator examines each key of a supplied dict and rejects
         it if it doesn't match.
         """
         if isinstance(value, dict):
             for k in value.keys():
-                if not isinstance(k, str) or not k.startswith("clueweb"):
+                if not isinstance(k, str):
                     raise ValueError(
                         f"Citations key {k} is invalid (should start with 'clueweb'))"
                     )

@@ -198,9 +198,3 @@ class HFModelQuantized(HFModel):
 
     def __str__(self) -> str:
         return str(self.name)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    model = OpenAIModel(OpenAIModelVersion.GPT_4o_mini)
-    print(model.generate([{"role": "system", "content": "Speak as if you were a drunken sailor."},{"role": "user", "content": "Hey, what's up?"}]))

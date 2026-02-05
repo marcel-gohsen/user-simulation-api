@@ -2,21 +2,24 @@ import abc
 import copy
 import json
 import logging
+import uuid
 from typing import List, Dict, Any, Tuple, Optional
 
 import torch
 from sentence_transformers import SentenceTransformer
 
 import config
-from data.topic import Topic
+from shared_task.shared_task import SharedTaskManager
+from shared_task.topic import Topic
 from simulation.llm import HFModelQuantized, LLMVersion, Precision, OpenAIModelVersion, OpenAIModel
 
 
 class User(metaclass=abc.ABCMeta):
 
-    def __init__(self):
+    def __init__(self, _id):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.DEBUG)
+        self._id = _id
 
     @abc.abstractmethod
     def initiate(self, topic_id: str) -> str:
@@ -25,6 +28,19 @@ class User(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def respond(self, topic_id, subtopics: List[str], messages: List[Dict[str, Any]]) -> Tuple[str, Optional[str], Optional[int]]:
         pass
+
+
+class DummyUser(User):
+
+    def __init__(self):
+        super().__init__(uuid.uuid4().hex)
+
+    def initiate(self, topic_id: str) -> tuple[str, Optional[str]]:
+        return SharedTaskManager().active_task.topics[topic_id].title, None
+
+    def respond(self, topic_id, subtopics: List[str], messages: List[Dict[str, Any]]) -> Tuple[
+        str, Optional[str], Optional[int]]:
+        return "Thanks for your response!", None, 0
 
 
 class PTKBUserWithGuidance(User):
@@ -54,8 +70,7 @@ class PTKBUserWithGuidance(User):
     answer_rating_gen_kwargs = {"do_sample": False, "max_new_tokens": 1, "top_p": None, "top_k": None}
 
     def __init__(self, _id, topics: Dict[str, Topic], subtopics: Dict[str, List[str]], ptkb: List[str]):
-        super().__init__()
-        self._id = _id
+        super().__init__(_id)
         self.topics = topics
         self.subtopics = subtopics
         self.ptkb = ptkb
@@ -196,8 +211,7 @@ class PTKBUserWithoutGuidance(User):
                   "diversity_penalty": 8.0, "top_k": None, "top_p": None}
 
     def __init__(self, _id, topics: Dict[str, Topic], subtopics: Dict[str, List[str]], ptkb: List[str]):
-        super().__init__()
-        self._id = _id
+        super().__init__(_id)
         self.topics = topics
         self.subtopics = subtopics
         self.ptkb = ptkb

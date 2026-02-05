@@ -1,6 +1,6 @@
 [project]
 name = "sim-api"
-version = "0.0.1"
+version = "0.0.2"
 description = ""
 authors = [
     {name = "Marcel Gohsen",email = "marcel.gohsen@uni-weimar.de"}

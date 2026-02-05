@@ -1,5 +1,4 @@
 api:
-  version: 1.1.4
   title: "TREC iKAT - Simulation API"
   description: "This API serves as a debugging tool for your conversational agents as well as for submitting your entries for the interactive task at TREC iKAT 2025. For more information on this check the [task guidelines](https://www.trecikat.com/guidelines/)."
   root_path: "/simulation"
