@@ -13,7 +13,7 @@ from shared_task.shared_task import SharedTaskManager
 
 @pytest.fixture
 def client():
-    from main import setup_app, setup_storage
+    from serve import setup_app, setup_storage
     task_name = "dummy"
     task_manager = SharedTaskManager()
     task_manager.set_active_task(task_name)

@@ -57,6 +57,9 @@ def main(admin_name: str, admin_password: str, shared_task: str):
         admin_password = None
 
     setup_storage(shared_task)
+    task_manager = SharedTaskManager()
+    task_manager.set_active_task(shared_task)
+    task_manager.active_task.initialize()
 
     if admin_name is not None and admin_password is not None:
         from security.authenticator import Authenticator
@@ -65,10 +68,6 @@ def main(admin_name: str, admin_password: str, shared_task: str):
         logger.info("Added admin credentials")
     else:
         logger.warning("No admin credentials provided")
-
-    task_manager = SharedTaskManager()
-    task_manager.set_active_task(shared_task)
-    task_manager.active_task.initialize()
 
     app = setup_app()
     try:

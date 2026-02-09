@@ -6,9 +6,11 @@ from logging import Logger
 from typing import Annotated, Tuple, Optional
 
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.security import HTTPBasicCredentials
 from starlette import status
 from starlette.responses import JSONResponse, Response
 
+from api.auth_router import admin_auth
 from api.messages import UserUtterance, RunMeta, AssistantResponse
 from config import CONFIG
 from shared_task.sessions import SessionManager
@@ -251,6 +253,14 @@ def run_dump(team_id: Annotated[str, Depends(authenticate)], run_id: str):
         )
 
     response = "\n".join([json.dumps(s) for s in run_manager.dump(run_id)])
+    return Response(response, status_code=status.HTTP_200_OK, media_type="application/x-ndjson")
+
+
+@run_router.get("/dump-all", **CONFIG["api"]["run"]["docs"]["dump-all"])
+def run_dump_all(credentials: Annotated[HTTPBasicCredentials, Depends(admin_auth)]):
+    run_manager = RunManager()
+
+    response = "\n".join([json.dumps(s) for s in run_manager.dump_all()])
     return Response(response, status_code=status.HTTP_200_OK, media_type="application/x-ndjson")
 
 

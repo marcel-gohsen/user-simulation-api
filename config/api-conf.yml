@@ -36,7 +36,9 @@ api:
       status:
         summary: "Get information about the status and progress of one of your runs."
       dump:
-        summary: "Produce a run file for one of your runs for you to review."
+        summary: "Export a run file for one of your runs for you to review."
+      dump-all:
+        summary: "Export run files of all runs."
 
   auth:
     name: "auth"

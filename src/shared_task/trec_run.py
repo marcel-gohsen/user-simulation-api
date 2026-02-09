@@ -142,6 +142,21 @@ class RunManager(object):
             self.runs[run_id] = run
         return run
 
+    def dump_all(self):
+        with RunManager._lock:
+            cursor = self.db_connection.execute(
+                "SELECT runs.id FROM runs;"
+            )
+
+            run_ids = [x[0] for x in cursor.fetchall()]
+
+        data = []
+
+        for run_id in run_ids:
+            data.extend(self.dump(run_id))
+
+        return data
+
     def dump(self, run_id: str) -> Optional[List[Dict[str, Any]]]:
         with RunManager._lock:
             cursor = self.db_connection.execute(

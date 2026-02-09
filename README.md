@@ -6,7 +6,7 @@ Sim.API is a middleware to connect participant systems and user simulators for s
 
 ## Deployment
 
-Sim.API can be installed either directly as a standalone python application or as a Docker container.
+Sim.API can be installed either directly as a standalone Python application or as a Docker container.
 
 ### Option 1 (from source code)
 
@@ -23,10 +23,29 @@ poetry run serve --admin-name <name> --admin-password <password> --shared-task <
 
 ### Option 2 (from Docker image)
 
-TBD.
+There is a CUDA-based prebuilt Docker image available to deploy the Sim.API. To access the database from outside of the built container it makes sense to mount the database path to the host system. 
+
+```shell
+docker run [--gpus all] -p 8888:8888\
+  -v <host_path>:/app/database\
+  -e ADMIN_NAME=<admin_name>\
+  -e ADMIN_PASSWORD=<admin_password>\
+  -e SHARED_TASK=<shared_task>\ 
+  registry.webis.de/code-lib/public-images/user-simulation-api:latest
+```
+
+Changes to the source code require a rebuild of the image for which there is a Makefile routine. 
+
+```shell
+make docker_build
+```
+
+## Instructions for Organizers
+
+### Configuring a shared task
 
 
-## Example Instructions for Participants
+## Instructions for Participants
 
 In TREC iKAT Year 3, we offer an interactive task in which a simulated user sends out utterances to participants' systems. For more information on this task please check [the guidelines](https://www.trecikat.com/guidelines/).
 
