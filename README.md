@@ -42,6 +42,8 @@ make docker_build
 
 ## Instructions for Organizers
 
+> Note: The following instructions assume that the API is deployed at `localhost:8888/simulation`. This is likely going to change when the API is deployed in practice and the documentation for participants has to be adjusted accordingly. 
+
 ### Configuring Topics and User Simulators
 
 To configure a new shared task, the `shared_task.shared_task.SharedTask` class has to be implemented. The class is defined as shown below.
@@ -167,7 +169,7 @@ curl -X POST -H "Authorization: Bearer <token>" -H "Content-Type: application/js
     "run_id": "teamA-llama3-dense-retrieval",
     "description": "The approach uses a retrieval-augmented generation pipeline with llama3.3 70B as generation backbone and a dense retrieval approach for the retrieval of relevant passages.", 
      "track_persona": false
-  }' https://trec-ikat25.webis.de/simulation/run/start
+  }' localhost:8888/simulation/run/start
 ```
 
 A response to a successful request looks like this:
@@ -217,7 +219,7 @@ curl -X POST -H "Authorization: Bearer <token>" -H "Content-Type: application/js
    "ptkb_provenance": [
      "I live in the Netherlands."
    ]
-  }' https://trec-ikat25.webis.de/simulation/run/continue
+  }' localhost:8888/simulation/run/continue
 ```
 
 Successful requests always result in responses formatted as mentioned above. 
