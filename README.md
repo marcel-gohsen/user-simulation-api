@@ -18,7 +18,7 @@ poetry install
 
 The server can be started with the following command. Provide the credentials of an admin account, which can be used to register new teams. The shared task name can be configured by the organizers.
 ```shell
-poetry run serve --admin-name <name> --admin-password <password> --shared-task <name>
+poetry run serve --admin-name <admin_name> --admin-password <admin_password> --shared-task <shared_task>
 ```
 
 ### Option 2 (from Docker image)
@@ -42,28 +42,102 @@ make docker_build
 
 ## Instructions for Organizers
 
-### Configuring a shared task
+### Configuring Topics and User Simulators
 
+To configure a new shared task, the `shared_task.shared_task.SharedTask` class has to be implemented. The class is defined as shown below.
+
+```python
+class SharedTask(metaclass=ABCMeta):
+    """Abstract class to configure shared tasks."""
+    
+    name: str
+    topics: OrderedDict[str, Topic]
+    users_per_topic: Dict[str, List[simulation.user.User]]
+    debug_users_per_topic: Dict[str, List[simulation.user.User]]
+
+
+    @abstractmethod
+    def initialize(self):
+        pass
+```
+
+A unique `name` has to be assigned, which is provided as command line parameter at the server run command to select the new shared task. The `topics` is an ordered dictionary (order is defined by order of insertion) that maps from topic id to the actual topic object. The `users_per_topic` and `debug_users_per_topic` should provide a mapping between topic ids and corresponding user simulation implementation that should be used for that given topic in the run submission or playground, respectively. If multiple implementations are specified for a given topic, a random one is assigned during runs. 
+
+To add additional user simulators the `simulation.user.User` class has to be overridden. 
+
+```python
+class User(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def initiate(self, topic_id: str) -> str:
+        pass
+
+    @abc.abstractmethod
+    def respond(self, topic_id, subtopics: List[str], messages: List[Dict[str, Any]]) -> Tuple[str, Optional[str], Optional[int]]:
+        pass
+```
+
+The User class has two methods `initiate()` and `respond()`, which are responsible for producing the initial utterance based on a topic and responding to system answers, respectively.
+
+### Configuring Budget Limits
+
+To configure budget limits and documentation strings, the `config/api-conf.yml` file can be adjusted. 
+
+```yaml
+  debug:
+    name: "debug"
+    limits:
+      value: 100
+      unit: sessions
+  ...
+  run:
+    name: "run"
+    limits:
+      value: 100
+      unit: runs
+```
+
+### Registering a New Team
+
+Administrators can register new teams by an authorized request to the `/auth/issue-token` endpoint. An example request with curl could look like the following. The `<auth_secret>` is the base64-encoded admin credentials as `<admin_name>:<admin_password>` as defined at server execution.
+
+```shell
+curl "localhost:8888/simulation/auth/issue-token?name=team-id" -H "Authorization: Basic <auth_secret>"
+```
+
+In response, a json object with a token is supplied.
+
+```json
+{"token":  "<token>"}
+```
+
+```shell
+curl "localhost:8888/simulation/auth/issue-token?name=team-id" -H "Authorization: Basic <auth_secret>"
+```
+
+### Exporting Run Files
+
+A call to the `/run/dump-all` endpoint will export all run submission of all teams in a TREC'25-compliant run file format. This action requires admin privileges. 
+
+```shell
+curl "localhost:8888/simulation/run/dump-all" -H "Authorization: Basic <auth_secret>"
+```
 
 ## Instructions for Participants
 
-In TREC iKAT Year 3, we offer an interactive task in which a simulated user sends out utterances to participants' systems. For more information on this task please check [the guidelines](https://www.trecikat.com/guidelines/).
-
 This API can be used for two main purposes:
-1. [Submitting runs for the interactive task](#submitting-runs). 
-2. [Developing, debugging and testing of participants' systems](#debugging--testing-a-system).
-
-The API is available at [https://trec-ikat25.webis.de/simulation/](https://trec-ikat25.webis.de/simulation/). From there you will be redirected to a reference of all provided endpoints and their expected in- and outputs.
+1. [Submitting runs for the shared task](#submitting-runs). 
+2. [Developing, debugging and testing of systems in the playground](#debugging--testing-a-system).
 
 ### Authentication
 
-Participants need to be registered to TREC iKAT in order to use this API. You can use [this form](https://ir.nist.gov/evalbase/accounts/login/?next=/evalbase/) to do so. As a result, participants will receive a base64-encoded access token. 
+Participants need to be registered to a shared task in order to use this API. As a result, participants will receive a base64-encoded access token from the organizers. 
 
 All requests to this API have to be authenticated. Participants can authenticate themselves by providing their access token in the HTTP `Authorization` header. 
 
 You can test if your access token is valid by calling the following method:
 ```bash
-curl -H "Authorization: Bearer <token>" https://trec-ikat25.webis.de/simulation/auth/verify
+curl -H "Authorization: Bearer <token>" localhost:8888/simulation/auth/verify
 ```
 
 If your token is valid, the API will respond with:
@@ -165,7 +239,7 @@ Successful requests always result in responses formatted as mentioned above.
 
 #### 3. Switching Topics
 
-There is no way to manually end the current conversation and move on to the next topic. The (simulated) user is responsible for that decision. This decision is indicated by the flag `last_response_of_session`. If this flag is true, the next call to the `run/continue` endpoint will result in the initial user utterance for the next topic. 
+There is no way to manually end the current conversation and move on to the next topic. The (simulated) user is responsible for that decision. This decision is indicated by the flag `last_response_of_session`. If this flag is true, the next call to the `/run/continue` endpoint will result in the initial user utterance for the next topic. 
 
 **Important**: If participants provide a response at the turn after this flag becomes true, this response will be ignored. The `response` field can be an empty string or `null` in this case.
 
@@ -175,14 +249,14 @@ When the (simulated) users inquired about all topics in the dataset, the flag `l
 
 #### Limits
 
-Participants can submit up to two runs. Incomplete runs will be evaluated as well. Missing topics will be assessed with a performance of zero.   
+Participants can submit a limited number of runs. Incomplete runs will be evaluated as well. Missing topics will be assessed with a performance of zero.   
 
 ### Debugging / Testing a System
 
 Participants can also use the API for debugging and testing their systems. To this end, there are equivalent endpoints that emulate a run submission. 
 
-* `https://trec-ikat25.webis.de/simulation/debug/start`
-* `https://trec-ikat25.webis.de/simulation/debug/continue`
+* `localhost:8888/simulation/debug/start`
+* `localhost:8888/simulation/debug/continue`
 
 These two endpoints expect the exact same inputs as their run submission counterparts. 
 
@@ -195,7 +269,7 @@ Participants are allowed a limited number of requests for the debugging of their
 To keep track of the available budget, participants can check their available credits with the following request. 
 
 ```shell
-curl -H "Authorization: Bearer <token>" "https://trec-ikat25.webis.de/simulation/budget/check" 
+curl -H "Authorization: Bearer <token>" "localhost:8888/simulation/budget/check" 
 ```
 
 
@@ -207,7 +281,7 @@ curl -H "Authorization: Bearer <token>" "https://trec-ikat25.webis.de/simulation
 Participants can check the status of their runs to make sure that everything worked as expected. The following request can be used to check the status.
 
 ```shell
-curl -X GET -H "Authorization: Bearer <token>" "https://trec-ikat25.webis.de/simulation/run/status?run_id=teamA-llama3-dense-retrieval"
+curl -X GET -H "Authorization: Bearer <token>" "localhost:8888/simulation/run/status?run_id=teamA-llama3-dense-retrieval"
 ```
 
 A typical response looks like the following.

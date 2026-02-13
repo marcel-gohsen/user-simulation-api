@@ -2,14 +2,19 @@ import csv
 import importlib
 import json
 from abc import ABCMeta, abstractmethod
-from typing import OrderedDict
+from typing import OrderedDict, Dict, List
 
-import simulation
+import simulation.user
 from shared_task.topic import Topic
 
 
 class SharedTask(metaclass=ABCMeta):
     """Abstract class to configure shared tasks."""
+
+    name: str
+    topics: OrderedDict[str, Topic]
+    users_per_topic: Dict[str, List[simulation.user.User]]
+    debug_users_per_topic: Dict[str, List[simulation.user.User]]
 
     def __init__(self, name):
         self.name = name

@@ -9,7 +9,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 
 import config
-from shared_task.shared_task import SharedTaskManager
+import shared_task.shared_task as shared_task
 from shared_task.topic import Topic
 from simulation.llm import HFModelQuantized, LLMVersion, Precision, OpenAIModelVersion, OpenAIModel
 
@@ -36,7 +36,7 @@ class DummyUser(User):
         super().__init__(uuid.uuid4().hex)
 
     def initiate(self, topic_id: str) -> tuple[str, Optional[str]]:
-        return SharedTaskManager().active_task.topics[topic_id].title, None
+        return shared_task.SharedTaskManager().active_task.topics[topic_id].title, None
 
     def respond(self, topic_id, subtopics: List[str], messages: List[Dict[str, Any]]) -> Tuple[
         str, Optional[str], Optional[int]]:
