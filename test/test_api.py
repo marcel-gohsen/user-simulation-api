@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError, TypeAdapter
 from starlette.testclient import TestClient
 
-from api.messages import UserUtterance, RunMeta, AssistantResponse
+from api.messages import UserUtteranceMessage, RunMetaMessage, AssistantResponseMessage
 from security.authenticator import Authenticator
 from shared_task.shared_task import SharedTaskManager
 
@@ -38,14 +38,14 @@ def team_token(client):
     name = "_test_team"
     authenticator.rm_team(name)
     yield authenticator.add_team(name)
-    authenticator.rm_team(name)
+    # authenticator.rm_team(name)
 
 
 @pytest.mark.integration
 def test_run_start(client, team_token):
-    run_meta = RunMeta("_test-run-start", "This is a test run.", False)
+    run_meta = RunMetaMessage("_test-run-start", "This is a test run.", extra={"test": True})
     response = client.post(
-        "/debug/start",
+        "/run/start",
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {team_token}",
@@ -57,16 +57,16 @@ def test_run_start(client, team_token):
 
     data = response.content.decode("utf-8")
     try:
-        TypeAdapter(UserUtterance).validate_json(data)
+        TypeAdapter(UserUtteranceMessage).validate_json(data)
     except ValidationError as e:
         pytest.fail(f"API response is not valid!\n{str(e)}")
 
 
 @pytest.mark.integration
 def test_full_run(client, team_token):
-    run_meta = RunMeta("_test-run-full", "This is a test run.", False)
+    run_meta = RunMetaMessage("_test-run-full", "This is a test run.", extra={"test": True})
     response = client.post(
-        "/debug/start",
+        "/run/start",
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {team_token}",
@@ -80,7 +80,7 @@ def test_full_run(client, team_token):
 
     utterance = None
     try:
-        utterance = TypeAdapter(UserUtterance).validate_json(data)
+        utterance = TypeAdapter(UserUtteranceMessage).validate_json(data)
     except ValidationError as e:
         pytest.fail(f"API response is not valid!\n{str(e)}")
 
@@ -88,15 +88,15 @@ def test_full_run(client, team_token):
         if utterance.last_response_of_run:
             break
 
-        assistant_response = AssistantResponse(
+        assistant_response = AssistantResponseMessage(
             run_meta.run_id,
             "This is a test response!",
             {"docA": 0.9, "docB": 0.5},
-            None
+            {"comment": "This is test metadata."}
         )
 
         response = client.post(
-            "/debug/continue",
+            "/run/continue",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {team_token}",
@@ -109,7 +109,7 @@ def test_full_run(client, team_token):
         data = response.content.decode("utf-8")
         try:
 
-            utterance = TypeAdapter(UserUtterance).validate_json(data)
+            utterance = TypeAdapter(UserUtteranceMessage).validate_json(data)
         except ValidationError as e:
             pytest.fail(f"API response is not valid!\n{str(e)}")
 
@@ -117,7 +117,7 @@ def test_full_run(client, team_token):
 @pytest.mark.integration
 def test_malformed_request(client, team_token):
     response = client.post(
-        "/debug/start",
+        "/run/start",
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {team_token}",
@@ -130,9 +130,9 @@ def test_malformed_request(client, team_token):
 
 @pytest.mark.integration
 def test_unauthorized_request(client):
-    run_meta = RunMeta("_test-run-auth", "This is a test run.", False)
+    run_meta = RunMetaMessage("_test-run-auth", "This is a test run.", extra={"test": True})
     response = client.post(
-        "/debug/start",
+        "/run/start",
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer d3JvbmctdG9rZW4=",

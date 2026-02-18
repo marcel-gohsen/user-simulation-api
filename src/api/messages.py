@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 import spacy
 from pydantic import StrictStr, field_validator
 from pydantic.dataclasses import dataclass
@@ -9,7 +11,7 @@ CitationType = dict[StrictStr, float] | None
 # Pydantic dataclasses for the API endpoints
 
 @dataclass
-class AssistantResponse:
+class AssistantResponseMessage:
     """
     This defines the format of the object that the clients should send to 
     the /continue endpoint.
@@ -19,8 +21,10 @@ class AssistantResponse:
     # citations may or may not be provided and can have multiple formats.
     # note that this is validated using check_citations below.
     citations: CitationType = None
+
+    meta: Dict[StrictStr, Any] = None
     # ptkb provenance listing may or may not be provided
-    ptkb_provenance: list[StrictStr] | None = None
+    # ptkb_provenance: list[StrictStr] | None = None
 
     _nlp = spacy.blank("en")
 
@@ -58,7 +62,7 @@ class AssistantResponse:
 
 
 @dataclass
-class UserUtterance:
+class UserUtteranceMessage:
     """
     This defines the format of the object that the API sends back to the
     client system when a request arrives at the /start or /continue endpoints.
@@ -74,12 +78,12 @@ class UserUtterance:
 
 
 @dataclass
-class RunMeta:
+class RunMetaMessage:
     """
     This defines the format of the object that the clients should send
     to the /start endpoint to kick off a run.
     """
     run_id: StrictStr
     description: StrictStr
-    track_persona: bool = False
+    extra: Dict[StrictStr, Any] = None
     team_id: StrictStr | None = None

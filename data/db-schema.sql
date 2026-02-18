@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS runs(
     id          VARCHAR(256) NOT NULL PRIMARY KEY,
     team_id     VARCHAR(256) NOT NULL,
     description TEXT NOT NULL,
-    track_persona BOOLEAN,
+    extra       TEXT,
     FOREIGN KEY (team_id) REFERENCES teams(id)
 );
 
@@ -25,12 +25,13 @@ CREATE TABLE IF NOT EXISTS requests(
     user_id         CHAR(36) NOT NULL,
     api             VARCHAR(10) NOT NULL,
     user_utterance  TEXT NOT NULL,
-    response        TEXT,
-    citations       TEXT,
-    ptkbs           TEXT,
+    user_meta       TEXT,
+    assistant_response        TEXT,
+    assistant_meta  TEXT,
+    assistant_citations       TEXT,
+
+
     count_towards_credits BOOLEAN DEFAULT true,
-    rubrik          VARCHAR(255),
-    rubrik_score    INTEGER,
     FOREIGN KEY(run_id) REFERENCES runs(id),
     FOREIGN KEY (team_id) REFERENCES teams(id)
 );

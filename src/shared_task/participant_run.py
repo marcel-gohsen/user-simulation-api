@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from threading import RLock
 from typing import Dict, Optional, OrderedDict, Any, List
 
-from api.messages import RunMeta
+from api.messages import RunMetaMessage
 from config import DATABASE_DIR
 from shared_task.sessions import Session
 from shared_task.topic import Topic
@@ -14,8 +14,8 @@ from shared_task.shared_task import SharedTaskManager
 
 
 @dataclass
-class TRECRun:
-    run_meta: RunMeta
+class ParticipantRun:
+    run_meta: RunMetaMessage
 
     # topic_id -> session
     sessions: Dict[str, Session] = field(default_factory=dict)
@@ -30,9 +30,9 @@ class TRECRun:
     def get_progress(self):
         task_manager = SharedTaskManager()
         topics = task_manager.active_task.topics
-        done_topics = [t._id for t in topics.values() if t._id not in self._open_topics]
+        done_topics = [t.id for t in topics.values() if t.id not in self._open_topics]
         return {"done_topics": done_topics,
-                "open_topics": [t._id for t in self._open_topics.values()]}
+                "open_topics": [t.id for t in self._open_topics.values()]}
 
 
 class RunManager(object):
@@ -59,7 +59,7 @@ class RunManager(object):
 
             return instance
 
-    def get_active_run(self, run_id: str) -> TRECRun | None:
+    def get_active_run(self, run_id: str) -> ParticipantRun | None:
         with RunManager._lock:
             return self.runs.get(run_id, None)
 
@@ -80,7 +80,7 @@ class RunManager(object):
                 cursor = self.db_connection.execute(f"SELECT DISTINCT topic_id FROM requests WHERE run_id=? AND api='run'", (run_id,))
                 topic_ids = [t[0] for t in cursor.fetchall()]
             progress["done_topics"] = topic_ids
-            progress["open_topics"] = [t._id for t in active_task.topics.values() if t._id not in topic_ids]
+            progress["open_topics"] = [t.id for t in active_task.topics.values() if t.id not in topic_ids]
         else:
             progress["status"] = "active"
             progress = {**progress, **active_run.get_progress()}
@@ -105,8 +105,8 @@ class RunManager(object):
             res = cursor.fetchone()
         return res is not None or active_run is not None
 
-    def create_run(self, run_meta: RunMeta) -> TRECRun:
-        run = TRECRun(run_meta)
+    def create_run(self, run_meta: RunMetaMessage) -> ParticipantRun:
+        run = ParticipantRun(run_meta)
         with RunManager._lock:
             self.runs[run_meta.run_id] = run
 
@@ -114,12 +114,12 @@ class RunManager(object):
             with RunManager._lock:
                 _ = self.db_connection.execute(
                     "INSERT INTO runs VALUES (?,?,?,?);",
-                    (run.run_meta.run_id, run.run_meta.team_id, run.run_meta.description, run.run_meta.track_persona)
+                    (run.run_meta.run_id, run.run_meta.team_id, run.run_meta.description, json.dumps(run.run_meta.extra))
                 )
                 self.db_connection.commit()
         return run
 
-    def recover_run(self, run_id: str) -> TRECRun:
+    def recover_run(self, run_id: str) -> ParticipantRun:
         run = self.get_active_run(run_id)
         if run is not None:
             return run
@@ -130,7 +130,7 @@ class RunManager(object):
             cursor.execute(f"SELECT * FROM runs WHERE id=?;", (run_id,))
             res = cursor.fetchone()
 
-        run = TRECRun(RunMeta(res[0], res[2], res[3], res[1]))
+        run = ParticipantRun(RunMetaMessage(res[0], res[2], res[3], res[1]))
         while True:
             topic = run._open_topics.popitem(last=False)
             if topic[0] not in topic_ids:

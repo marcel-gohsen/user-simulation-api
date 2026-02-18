@@ -6,8 +6,8 @@ from starlette import status
 from typing_extensions import Literal
 
 from config import DATABASE_DIR
+from shared_task.participant_run import RunManager
 from shared_task.shared_task import SharedTaskManager
-from shared_task.trec_run import RunManager
 
 
 class BudgetTracker:

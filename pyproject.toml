@@ -1,6 +1,6 @@
 [project]
 name = "sim-api"
-version = "0.0.4"
+version = "0.1.0"
 description = ""
 authors = [
     {name = "Marcel Gohsen",email = "marcel.gohsen@uni-weimar.de"}
@@ -42,7 +42,8 @@ build-backend = "poetry.core.masonry.api"
 [dependency-groups]
 dev = [
     "pytest (>=9.0.2,<10.0.0)",
-    "pytest-cov (>=7.0.0,<8.0.0)"
+    "pytest-cov (>=7.0.0,<8.0.0)",
+    "black (>=26.1.0,<27.0.0)"
 ]
 
 [tool.pytest]
