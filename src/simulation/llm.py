@@ -30,10 +30,9 @@ class LLMVersion(Enum):
     Gemma_2_9B_IT = "google/gemma-2-9b-it"
     Gemma_2_27B_IT = "google/gemma-2-27b-it"
 
-
     Gemma_3_4B_IT = "google/gemma-3-4b-it"
     # phi
-    Phi_3_5_MINI_INSTRUCT= "microsoft/Phi-3.5-mini-instruct"
+    Phi_3_5_MINI_INSTRUCT = "microsoft/Phi-3.5-mini-instruct"
     Phi_3_5_MOE_INSTRUCT = "microsoft/Phi-3.5-MoE-instruct"
     Phi_3_MEDIUM_128K_INSTRUCT = "microsoft/Phi-3-medium-128k-instruct"
     PHI_4 = "microsoft/phi-4"
@@ -56,7 +55,9 @@ class LLM(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def batch_generate(self, messages: List[List[Dict[str, str]]], **kwargs) -> List[str]:
+    def batch_generate(
+        self, messages: List[List[Dict[str, str]]], **kwargs
+    ) -> List[str]:
         pass
 
 
@@ -75,23 +76,28 @@ class OpenAIModel(LLM):
 
     def generate(self, messages: List[Dict[str, str]], **kwargs) -> List[str]:
         response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            modalities=["text"],
-            **kwargs
+            model=self.model_name, messages=messages, modalities=["text"], **kwargs
         )
 
         outputs = [x.message.content for x in response.choices]
 
         return outputs
 
-    def batch_generate(self, messages: List[List[Dict[str, str]]], **kwargs) -> List[str]:
+    def batch_generate(
+        self, messages: List[List[Dict[str, str]]], **kwargs
+    ) -> List[str]:
         raise NotImplemented()
 
 
 class HFModel(LLM, metaclass=abc.ABCMeta):
-    '''Base class for Hugging Face models.'''
-    def __init__(self, version: LLMVersion, quant_config: Optional[BitsAndBytesConfig] = None, **kwargs):
+    """Base class for Hugging Face models."""
+
+    def __init__(
+        self,
+        version: LLMVersion,
+        quant_config: Optional[BitsAndBytesConfig] = None,
+        **kwargs,
+    ):
         super().__init__()
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -105,7 +111,7 @@ class HFModel(LLM, metaclass=abc.ABCMeta):
             use_fast=True,
             add_eos_token=True,
             add_bos_token=True,
-            padding_side="left"
+            padding_side="left",
         )
         self.tokenizer.pad_token_id = self.tokenizer.bos_token_id
 
@@ -118,7 +124,7 @@ class HFModel(LLM, metaclass=abc.ABCMeta):
                 low_cpu_mem_usage=True,
                 torch_dtype="auto",
                 attn_implementation="flash_attention_2",
-                **kwargs
+                **kwargs,
             )
         else:
             self.logger.info("FlashAttention2 unavailable")
@@ -127,7 +133,7 @@ class HFModel(LLM, metaclass=abc.ABCMeta):
                 quantization_config=quant_config,
                 low_cpu_mem_usage=True,
                 torch_dtype="auto",
-                **kwargs
+                **kwargs,
             )
 
         if not next(self.model.parameters()).is_cuda:
@@ -138,14 +144,24 @@ class HFModel(LLM, metaclass=abc.ABCMeta):
                 self.logger.warning(e)
                 pass
 
-    def tokenize_messages(self, messages: List[Dict[str, str]|List[Dict[str, str]]]):
+    def tokenize_messages(self, messages: List[Dict[str, str] | List[Dict[str, str]]]):
         if isinstance(messages[0], list):
             return self.tokenizer.apply_chat_template(
-                messages, return_tensors='pt', padding=True, add_generation_prompt=True, return_dict=True, enable_thinking=False).to("cuda")
+                messages,
+                return_tensors="pt",
+                padding=True,
+                add_generation_prompt=True,
+                return_dict=True,
+                enable_thinking=False,
+            ).to("cuda")
         else:
             return self.tokenizer.apply_chat_template(
-                messages, return_tensors='pt', add_generation_prompt=True, return_dict=True, enable_thinking=False).to("cuda")
-
+                messages,
+                return_tensors="pt",
+                add_generation_prompt=True,
+                return_dict=True,
+                enable_thinking=False,
+            ).to("cuda")
 
     def generate(self, messages: List[Dict[str, str]], **kwargs) -> List[str]:
         inputs = self.tokenize_messages(messages)
@@ -153,42 +169,47 @@ class HFModel(LLM, metaclass=abc.ABCMeta):
             **inputs,
             pad_token_id=self.tokenizer.bos_token_id,
             return_dict_in_generate=True,
-            **kwargs
+            **kwargs,
         )
 
-        out_ids = outputs.sequences[:,len(inputs.input_ids[0]):]
+        out_ids = outputs.sequences[:, len(inputs.input_ids[0]) :]
         out_texts = self.tokenizer.batch_decode(out_ids, skip_special_tokens=True)
         return out_texts
 
-    def batch_generate(self, messages: List[List[Dict[str, str]]],
-                       **kwargs) -> List[str]:
+    def batch_generate(
+        self, messages: List[List[Dict[str, str]]], **kwargs
+    ) -> List[str]:
         inputs = self.tokenize_messages(messages)
         gen_ids = self.model.generate(
-            **inputs,
-            pad_token_id=self.tokenizer.bos_token_id,
-            **kwargs
+            **inputs, pad_token_id=self.tokenizer.bos_token_id, **kwargs
         )
-        gen_ids = gen_ids[:, inputs.input_ids.shape[1]:]
+        gen_ids = gen_ids[:, inputs.input_ids.shape[1] :]
         outputs = self.tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
         return outputs
 
 
 class HFModelQuantized(HFModel):
-    def __init__(self, version: LLMVersion,
-                 quantization: Precision = None,
-                 ):
+    def __init__(
+        self,
+        version: LLMVersion,
+        quantization: Precision = None,
+    ):
         bnb_config = None
         if quantization == Precision.NF4:
             bnb_config = BitsAndBytesConfig(
                 load_in_4bit=True,
-                bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+                bnb_4bit_compute_dtype=(
+                    torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+                ),
                 bnb_4bit_use_double_quant=True,
-                bnb_4bit_quant_type="nf4"
+                bnb_4bit_quant_type="nf4",
             )
         elif quantization == Precision.NF8:
             bnb_config = BitsAndBytesConfig(
                 load_in_8bit=True,
-                bnb_4bit_compute_dtype=torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16,
+                bnb_4bit_compute_dtype=(
+                    torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+                ),
             )
         self.name = f"{version.value.split('/')[-1]}@{quantization.value}"
         super().__init__(version, bnb_config)

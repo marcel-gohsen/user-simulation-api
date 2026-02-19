@@ -19,7 +19,9 @@ class ParticipantRun:
 
     # topic_id -> session
     sessions: Dict[str, Session] = field(default_factory=dict)
-    _open_topics: OrderedDict[str, Topic] = field(default_factory=lambda: copy.deepcopy(SharedTaskManager().active_task.topics))
+    _open_topics: OrderedDict[str, Topic] = field(
+        default_factory=lambda: copy.deepcopy(SharedTaskManager().active_task.topics)
+    )
 
     def next_topic(self) -> Topic:
         return self._open_topics.popitem(last=False)[1]
@@ -31,8 +33,10 @@ class ParticipantRun:
         task_manager = SharedTaskManager()
         topics = task_manager.active_task.topics
         done_topics = [t.id for t in topics.values() if t.id not in self._open_topics]
-        return {"done_topics": done_topics,
-                "open_topics": [t.id for t in self._open_topics.values()]}
+        return {
+            "done_topics": done_topics,
+            "open_topics": [t.id for t in self._open_topics.values()],
+        }
 
 
 class RunManager(object):
@@ -44,17 +48,27 @@ class RunManager(object):
         with RunManager._lock:
             if debug:
                 if cls._debug_instance is None:
-                    cls._debug_instance = super(RunManager, cls).__new__(cls, *args, **kwargs)
+                    cls._debug_instance = super(RunManager, cls).__new__(
+                        cls, *args, **kwargs
+                    )
                     cls._debug_instance.runs = {}
-                    db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
-                    cls._debug_instance.db_connection = sqlite3.connect(db_path, check_same_thread=False)
+                    db_path = os.path.join(
+                        DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db"
+                    )
+                    cls._debug_instance.db_connection = sqlite3.connect(
+                        db_path, check_same_thread=False
+                    )
                 instance = cls._debug_instance
             else:
                 if cls._instance is None:
                     cls._instance = super(RunManager, cls).__new__(cls, *args, **kwargs)
                     cls._instance.runs = {}
-                    db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
-                    cls._instance.db_connection = sqlite3.connect(db_path, check_same_thread=False)
+                    db_path = os.path.join(
+                        DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db"
+                    )
+                    cls._instance.db_connection = sqlite3.connect(
+                        db_path, check_same_thread=False
+                    )
                 instance = cls._instance
 
             return instance
@@ -65,7 +79,9 @@ class RunManager(object):
 
     def get_runs(self, team_id: str) -> List[str]:
         with RunManager._lock:
-            cursor = self.db_connection.execute(f"SELECT id FROM runs WHERE team_id=?;", (team_id,))
+            cursor = self.db_connection.execute(
+                f"SELECT id FROM runs WHERE team_id=?;", (team_id,)
+            )
             run_ids = cursor.fetchall()
         run_ids = [r[0] for r in run_ids]
         return run_ids
@@ -77,10 +93,15 @@ class RunManager(object):
         if active_run is None:
             progress["status"] = "inactive"
             with RunManager._lock:
-                cursor = self.db_connection.execute(f"SELECT DISTINCT topic_id FROM requests WHERE run_id=? AND api='run'", (run_id,))
+                cursor = self.db_connection.execute(
+                    f"SELECT DISTINCT topic_id FROM requests WHERE run_id=? AND api='run'",
+                    (run_id,),
+                )
                 topic_ids = [t[0] for t in cursor.fetchall()]
             progress["done_topics"] = topic_ids
-            progress["open_topics"] = [t.id for t in active_task.topics.values() if t.id not in topic_ids]
+            progress["open_topics"] = [
+                t.id for t in active_task.topics.values() if t.id not in topic_ids
+            ]
         else:
             progress["status"] = "active"
             progress = {**progress, **active_run.get_progress()}
@@ -97,11 +118,15 @@ class RunManager(object):
             if team_id is None:
                 cursor.execute(
                     "SELECT * FROM runs WHERE id=? AND "
-                    "EXISTS(SELECT * FROM requests WHERE requests.run_id = runs.id AND requests.api = 'run')", (run_id,))
+                    "EXISTS(SELECT * FROM requests WHERE requests.run_id = runs.id AND requests.api = 'run')",
+                    (run_id,),
+                )
             else:
                 cursor.execute(
                     "SELECT * FROM runs WHERE id=? AND runs.team_id=? AND "
-                    "EXISTS(SELECT * FROM requests WHERE requests.run_id = runs.id AND requests.api = 'run')", (run_id,team_id))
+                    "EXISTS(SELECT * FROM requests WHERE requests.run_id = runs.id AND requests.api = 'run')",
+                    (run_id, team_id),
+                )
             res = cursor.fetchone()
         return res is not None or active_run is not None
 
@@ -114,7 +139,12 @@ class RunManager(object):
             with RunManager._lock:
                 _ = self.db_connection.execute(
                     "INSERT INTO runs VALUES (?,?,?,?);",
-                    (run.run_meta.run_id, run.run_meta.team_id, run.run_meta.description, json.dumps(run.run_meta.extra))
+                    (
+                        run.run_meta.run_id,
+                        run.run_meta.team_id,
+                        run.run_meta.description,
+                        json.dumps(run.run_meta.extra),
+                    ),
                 )
                 self.db_connection.commit()
         return run
@@ -125,7 +155,10 @@ class RunManager(object):
             return run
 
         with RunManager._lock:
-            cursor = self.db_connection.execute(f"SELECT DISTINCT topic_id FROM requests WHERE run_id=? AND api='run'", (run_id,))
+            cursor = self.db_connection.execute(
+                f"SELECT DISTINCT topic_id FROM requests WHERE run_id=? AND api='run'",
+                (run_id,),
+            )
             topic_ids = cursor.fetchall()[0]
             cursor.execute(f"SELECT * FROM runs WHERE id=?;", (run_id,))
             res = cursor.fetchone()
@@ -144,9 +177,7 @@ class RunManager(object):
 
     def dump_all(self):
         with RunManager._lock:
-            cursor = self.db_connection.execute(
-                "SELECT runs.id FROM runs;"
-            )
+            cursor = self.db_connection.execute("SELECT runs.id FROM runs;")
 
             run_ids = [x[0] for x in cursor.fetchall()]
 
@@ -175,14 +206,14 @@ class RunManager(object):
                 "JOIN requests ON runs.id = requests.run_id "
                 "WHERE runs.id=? AND requests.api='run' "
                 "ORDER BY requests.timestamp;",
-                (run_id,))
-
+                (run_id,),
+            )
 
             requests = cursor.fetchall()
 
             column_names = [t[0] for t in cursor.description]
             for r in requests:
-                db_data.append({k: v for k,v in zip(column_names, r)})
+                db_data.append({k: v for k, v in zip(column_names, r)})
 
         if len(db_data) == 0:
             return None
@@ -194,7 +225,6 @@ class RunManager(object):
             "extra": json.loads(db_data[0]["extra"]),
         }
 
-
         responses_per_topic = {}
         for request in db_data:
             if request["topic_id"] not in responses_per_topic:
@@ -205,21 +235,24 @@ class RunManager(object):
         out_data = []
         for topic_id, responses in responses_per_topic.items():
             for i, response in enumerate(responses):
-                out_data.append({
-                    "metadata": {**metadata, "topic_id": f"{topic_id}_{i + 1}"},
-                    "responses": [
-                        {
-                            "rank": 1,
-                            "user_utterance": response["user_utterance"],
-                            "user_meta": json.loads(response["user_meta"]),
-                            "assistant_text": response["assistant_response"],
-                            "assistant_citations": json.loads(response["assistant_citations"]),
-                            "assistant_meta": json.loads(response["assistant_meta"]),
-                        }
-                    ]
-                })
+                out_data.append(
+                    {
+                        "metadata": {**metadata, "topic_id": f"{topic_id}_{i + 1}"},
+                        "responses": [
+                            {
+                                "rank": 1,
+                                "user_utterance": response["user_utterance"],
+                                "user_meta": json.loads(response["user_meta"]),
+                                "assistant_text": response["assistant_response"],
+                                "assistant_citations": json.loads(
+                                    response["assistant_citations"]
+                                ),
+                                "assistant_meta": json.loads(
+                                    response["assistant_meta"]
+                                ),
+                            }
+                        ],
+                    }
+                )
 
         return out_data
-
-
-

@@ -36,7 +36,9 @@ class SessionManager(object):
 
         return runs.get(run_id, None)
 
-    def create_session(self, run: RunMetaMessage, user_id: str, topic_id: str) -> Session:
+    def create_session(
+        self, run: RunMetaMessage, user_id: str, topic_id: str
+    ) -> Session:
         assert run.team_id is not None
         if run.team_id in self.sessions:
             assert run.run_id not in self.sessions[run.team_id]

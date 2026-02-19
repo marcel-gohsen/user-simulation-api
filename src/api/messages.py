@@ -4,18 +4,19 @@ import spacy
 from pydantic import StrictStr, field_validator
 from pydantic.dataclasses import dataclass
 
-
 # typedef for the citation field to make annotations more concise
 CitationType = dict[StrictStr, float] | None
 
 # Pydantic dataclasses for the API endpoints
 
+
 @dataclass
 class AssistantResponseMessage:
     """
-    This defines the format of the object that the clients should send to 
+    This defines the format of the object that the clients should send to
     the /continue endpoint.
     """
+
     run_id: StrictStr
     response: StrictStr
     # citations may or may not be provided and can have multiple formats.
@@ -38,7 +39,6 @@ class AssistantResponseMessage:
         raise ValueError(
             f"Response is too long ({len(doc)} tokens). Response exceeds limit of 250 tokens."
         )
-
 
     @field_validator("citations", mode="before")
     @classmethod
@@ -67,6 +67,7 @@ class UserUtteranceMessage:
     This defines the format of the object that the API sends back to the
     client system when a request arrives at the /start or /continue endpoints.
     """
+
     timestamp: StrictStr
     run_id: StrictStr
     topic_id: StrictStr
@@ -83,6 +84,7 @@ class RunMetaMessage:
     This defines the format of the object that the clients should send
     to the /start endpoint to kick off a run.
     """
+
     run_id: StrictStr
     description: StrictStr
     extra: Dict[StrictStr, Any] = None

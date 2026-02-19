@@ -23,8 +23,7 @@ def verify(team_id: Annotated[str, Depends(authenticate)]):
 
 @router.get("/issue-token", include_in_schema=False)
 def issue_token(
-    credentials: Annotated[HTTPBasicCredentials, Depends(admin_auth)],
-    name: str
+    credentials: Annotated[HTTPBasicCredentials, Depends(admin_auth)], name: str
 ):
     """Registers a new team and issues a token (requires admin privileges)."""
     authenticator = Authenticator()

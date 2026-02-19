@@ -85,7 +85,7 @@ def start(
         raise HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail=f'Active run with the name "{run_meta.run_id}" already exists '
-                   f'or a run with that name was already completed before.',
+            f"or a run with that name was already completed before.",
         )
 
     user = active_task.users_by_id[session.user_id]
@@ -188,7 +188,6 @@ def continue_conversation(
 
     user = active_task.users_by_id[session.user_id]
 
-
     if len(session.history) == 0:
         utterance = user.initiate(session)
     else:
@@ -219,7 +218,7 @@ def continue_conversation(
             assistant.response,
             assistant.citations,
             session.user_meta[-2] if len(session.user_meta) > 1 else {},
-            assistant.meta
+            assistant.meta,
         )
 
     if utterance.end_of_session:
@@ -237,7 +236,7 @@ def continue_conversation(
             None,
             {},
             utterance.meta,
-            {}
+            {},
         )
 
     return UserUtteranceMessage(
@@ -395,4 +394,3 @@ def check_request(
             )
 
     return True
-

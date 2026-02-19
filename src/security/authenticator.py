@@ -17,10 +17,11 @@ from shared_task.shared_task import SharedTaskManager
 class Authenticator:
 
     def __init__(self):
-        db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
+        db_path = os.path.join(
+            DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db"
+        )
         self.db_connection = sqlite3.connect(db_path, check_same_thread=False)
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
     def add_team(self, _id: str):
         cursor = self.db_connection.execute("SELECT * FROM teams WHERE id = ?;", (_id,))
@@ -32,7 +33,7 @@ class Authenticator:
         token = token_hex(16)
         _ = self.db_connection.execute(
             "INSERT INTO teams (id, token) VALUES (?, ?)",
-            (_id, self.pwd_context.hash(token))
+            (_id, self.pwd_context.hash(token)),
         )
         self.db_connection.commit()
 
@@ -40,19 +41,12 @@ class Authenticator:
 
     def rm_team(self, _id: str):
         _ = self.db_connection.execute(
-            "DELETE FROM requests WHERE team_id = ?;",
-            (_id,)
+            "DELETE FROM requests WHERE team_id = ?;", (_id,)
         )
 
-        _ = self.db_connection.execute(
-            "DELETE FROM runs WHERE team_id = ?;",
-            (_id,)
-        )
+        _ = self.db_connection.execute("DELETE FROM runs WHERE team_id = ?;", (_id,))
 
-        _ = self.db_connection.execute(
-            "DELETE FROM teams WHERE id = ?;",
-            (_id,)
-        )
+        _ = self.db_connection.execute("DELETE FROM teams WHERE id = ?;", (_id,))
 
         self.db_connection.commit()
 
@@ -64,10 +58,7 @@ class Authenticator:
         self.db_connection.commit()
 
     def rm_admin(self, name: str):
-        _ = self.db_connection.execute(
-            "DELETE FROM admins WHERE name = ?;",
-            (name,)
-        )
+        _ = self.db_connection.execute("DELETE FROM admins WHERE name = ?;", (name,))
         self.db_connection.commit()
 
     def authenticate_admin(self, name: str, password: str):
@@ -88,7 +79,6 @@ class Authenticator:
         except (binascii.Error, UnicodeDecodeError):
             raise RuntimeError("Token is not base64 encoded.")
 
-
         cursor = self.db_connection.execute(
             "SELECT id, token FROM teams;",
         )
@@ -101,7 +91,10 @@ class Authenticator:
         return None
 
 
-oauth2_scheme = OAuth2AuthorizationCodeBearer(authorizationUrl="auth/verify", tokenUrl="/auth/issue-token")
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="auth/verify", tokenUrl="/auth/issue-token"
+)
+
 
 async def authenticate(token: Annotated[str, Depends(oauth2_scheme)]):
     authenticator = Authenticator()
@@ -116,4 +109,3 @@ async def authenticate(token: Annotated[str, Depends(oauth2_scheme)]):
         )
 
     return team_id
-

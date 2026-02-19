@@ -18,7 +18,8 @@ def setup_app() -> FastAPI:
         title=CONFIG["api"]["title"],
         description=CONFIG["api"]["description"],
         root_path=CONFIG["api"]["root_path"],
-        contact=CONFIG["api"]["contact"],)
+        contact=CONFIG["api"]["contact"],
+    )
     app.include_router(auth_router.router)
     app.include_router(run_router.debug_router)
     app.include_router(run_router.run_router)
@@ -26,9 +27,10 @@ def setup_app() -> FastAPI:
 
     @app.get("/", include_in_schema=False, response_class=RedirectResponse)
     def root():
-        return RedirectResponse(url=os.path.join(CONFIG["api"]["root_path"],"docs"))
+        return RedirectResponse(url=os.path.join(CONFIG["api"]["root_path"], "docs"))
 
     return app
+
 
 def setup_storage(shared_task: str):
     os.makedirs(DATABASE_DIR, exist_ok=True)
@@ -38,10 +40,29 @@ def setup_storage(shared_task: str):
             _ = conn.executescript(in_file.read())
             conn.commit()
 
+
 @click.command()
-@click.option("--admin-name", type=str, default=None, required=False, help="Set a username of the admin account.")
-@click.option("--admin-password", type=str, default=None, required=False, help="Set a password of the admin account.")
-@click.option("--shared-task", type=click.Choice(SharedTaskManager().shared_tasks.keys()), default="dummy", required=True, help="Select one of the preconfigured shared tasks.")
+@click.option(
+    "--admin-name",
+    type=str,
+    default=None,
+    required=False,
+    help="Set a username of the admin account.",
+)
+@click.option(
+    "--admin-password",
+    type=str,
+    default=None,
+    required=False,
+    help="Set a password of the admin account.",
+)
+@click.option(
+    "--shared-task",
+    type=click.Choice(SharedTaskManager().shared_tasks.keys()),
+    default="dummy",
+    required=True,
+    help="Select one of the preconfigured shared tasks.",
+)
 def main(admin_name: str, admin_password: str, shared_task: str):
     format_string = "%(asctime)s - %(name)-20s - %(levelname)-7s - %(message)s"
     log_config = uvicorn.config.LOGGING_CONFIG
@@ -63,6 +84,7 @@ def main(admin_name: str, admin_password: str, shared_task: str):
 
     if admin_name is not None and admin_password is not None:
         from security.authenticator import Authenticator
+
         authenticator = Authenticator()
         authenticator.add_admin(admin_name, admin_password)
         logger.info("Added admin credentials")
@@ -71,7 +93,9 @@ def main(admin_name: str, admin_password: str, shared_task: str):
 
     app = setup_app()
     try:
-        uvicorn.run(app, host="0.0.0.0", port=8888, log_config=log_config, log_level="debug")
+        uvicorn.run(
+            app, host="0.0.0.0", port=8888, log_config=log_config, log_level="debug"
+        )
     except KeyboardInterrupt:
         pass
 

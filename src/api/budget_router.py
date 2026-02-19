@@ -16,6 +16,7 @@ router = APIRouter(
 
 admin_auth = HTTPBasic()
 
+
 @router.get("/check", **CONFIG["api"]["budget"]["docs"]["check"])
 def check(teamname: Annotated[str, Depends(authenticate)]):
     from config import CONFIG
@@ -36,16 +37,21 @@ def check(teamname: Annotated[str, Depends(authenticate)]):
 
         remaining_credits[api] = {
             "remaining": remaining,
-            "unit": CONFIG["api"][api]["limits"]["unit"]
+            "unit": CONFIG["api"][api]["limits"]["unit"],
         }
 
     return JSONResponse({"remaining": remaining_credits})
 
+
 @router.get("/reset", include_in_schema=False)
-def reset_budget(credentials: Annotated[HTTPBasicCredentials, Depends(admin_auth)], teamname: str, api: Literal["debug", "run"]):
+def reset_budget(
+    credentials: Annotated[HTTPBasicCredentials, Depends(admin_auth)],
+    teamname: str,
+    api: Literal["debug", "run"],
+):
     authenticator = Authenticator()
     if not authenticator.authenticate_admin(
-            credentials.username.strip(), credentials.password.strip()
+        credentials.username.strip(), credentials.password.strip()
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

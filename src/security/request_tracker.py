@@ -11,13 +11,25 @@ from shared_task.shared_task import SharedTaskManager
 class RequestTracker:
 
     def __init__(self):
-        db_path = os.path.join(DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db")
+        db_path = os.path.join(
+            DATABASE_DIR, f"{SharedTaskManager().active_task.name}.db"
+        )
         self.db_connection = sqlite3.connect(db_path, check_same_thread=False)
 
-
-    def register_request(self, run_id: str, team_id: str, session_id: str, topic_id: str, user_id: str,
-                         api: Literal["debug", "run"], user_utterance: str, response: str | None,
-                         citations: dict[str, float], user_meta: Dict[str, Any], assistant_meta: Dict[str, Any]) -> None:
+    def register_request(
+        self,
+        run_id: str,
+        team_id: str,
+        session_id: str,
+        topic_id: str,
+        user_id: str,
+        api: Literal["debug", "run"],
+        user_utterance: str,
+        response: str | None,
+        citations: dict[str, float],
+        user_meta: Dict[str, Any],
+        assistant_meta: Dict[str, Any],
+    ) -> None:
         timestamp = datetime.datetime.now().isoformat()
 
         _ = self.db_connection.execute(

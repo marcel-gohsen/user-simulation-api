@@ -15,7 +15,6 @@ from simulation.user import User, UserUtterance, DummyUser, UnrestrictedUserSimu
 class SharedTask(metaclass=ABCMeta):
     """Abstract class to configure shared tasks."""
 
-
     name: str
     topics: OrderedDict[str, Topic]
     users_per_topic: Dict[str, List[User]]
@@ -53,7 +52,6 @@ class SharedTask(metaclass=ABCMeta):
     def initialize(self):
         pass
 
-
     @classmethod
     def init_session(cls, run, debug: bool) -> Optional[Session]:
         """
@@ -71,7 +69,9 @@ class SharedTask(metaclass=ABCMeta):
         topic_id = topic.id
 
         if debug:
-            user = random.choice(task_manager.active_task.debug_users_per_topic[topic_id])
+            user = random.choice(
+                task_manager.active_task.debug_users_per_topic[topic_id]
+            )
         else:
             user = random.choice(task_manager.active_task.users_per_topic[topic_id])
 
@@ -83,15 +83,18 @@ class SharedTask(metaclass=ABCMeta):
         return session
 
     @classmethod
-    def update_session(cls, session: Session, utterance: Optional[UserUtterance] = None, response: Optional[AssistantResponseMessage] = None):
+    def update_session(
+        cls,
+        session: Session,
+        utterance: Optional[UserUtterance] = None,
+        response: Optional[AssistantResponseMessage] = None,
+    ):
         if utterance is not None:
             session.history.append({"role": "user", "content": utterance.content})
             session.user_meta.append(copy.deepcopy(utterance.meta))
 
         if response is not None:
-            session.history.append(
-                {"role": "assistant", "content": response.response}
-            )
+            session.history.append({"role": "assistant", "content": response.response})
 
             session.assistant_meta.append(copy.deepcopy(response.meta))
 
@@ -101,6 +104,7 @@ class SharedTask(metaclass=ABCMeta):
 REPOSITORY OF SHARED TASKS
 ==========================
 """
+
 
 class DummySharedTask(SharedTask):
     """Dummy shared task for testing purposes."""
@@ -117,7 +121,6 @@ class DummySharedTask(SharedTask):
             self._add_debug_user(_id, DummyUser(self.topics))
 
 
-
 class TREC_iKAT25(SharedTask):
     topics_path = "data/trec-ikat25/2025_test_topics.json"
     users_path = "data/trec-ikat25/simulation-data.csv"
@@ -130,17 +133,21 @@ class TREC_iKAT25(SharedTask):
         self._load_users()
 
     @classmethod
-    def update_session(cls, session: Session,
-                       utterance: Optional[UserUtterance] = None,
-                       response: Optional[AssistantResponseMessage] = None):
+    def update_session(
+        cls,
+        session: Session,
+        utterance: Optional[UserUtterance] = None,
+        response: Optional[AssistantResponseMessage] = None,
+    ):
         super().update_session(session, utterance, response)
 
         if utterance is not None:
-            session.user_meta.append({
-                "rubric": utterance.meta["rubric"],
-                "rubric_score": utterance.meta["rubric_score"]
-            })
-
+            session.user_meta.append(
+                {
+                    "rubric": utterance.meta["rubric"],
+                    "rubric_score": utterance.meta["rubric_score"],
+                }
+            )
 
     def _load_topics(self):
         with open(self.topics_path, "r") as f:
@@ -156,23 +163,17 @@ class TREC_iKAT25(SharedTask):
             for row in reader:
                 topic_id = row[0].replace("Persona_", "").replace("_", "-").strip()
                 ptkb = [p.strip() for p in row[1].strip().split(";")]
-                rubrics = {topic_id: [row[i] for i in range(2, len(row)) if row[i].strip() != ""]}
+                rubrics = {
+                    topic_id: [
+                        row[i] for i in range(2, len(row)) if row[i].strip() != ""
+                    ]
+                }
 
-                user = UnrestrictedUserSimulator(
-                    row[0],
-                    self.topics,
-                    rubrics,
-                    ptkb
-                )
+                user = UnrestrictedUserSimulator(row[0], self.topics, rubrics, ptkb)
 
                 self._add_debug_user(topic_id, user)
 
-                user = UnrestrictedUserSimulator(
-                    row[0],
-                    self.topics,
-                    rubrics,
-                    ptkb
-                )
+                user = UnrestrictedUserSimulator(row[0], self.topics, rubrics, ptkb)
 
                 self._add_user(topic_id, user)
 
@@ -183,10 +184,10 @@ class SharedTaskManager:
     active_task: Optional[SharedTask] = None
 
     def __init__(self):
-        if not hasattr(self, 'shared_tasks'):
+        if not hasattr(self, "shared_tasks"):
             self.shared_tasks = {}
 
-            modname, _, clsname = "shared_task.shared_task.SharedTask".rpartition('.')
+            modname, _, clsname = "shared_task.shared_task.SharedTask".rpartition(".")
             mod = importlib.import_module(modname)
             cls = getattr(mod, clsname)
 
@@ -195,7 +196,6 @@ class SharedTaskManager:
                 self.shared_tasks[task_instance.name] = task_instance
 
             self.active_task = None
-
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
