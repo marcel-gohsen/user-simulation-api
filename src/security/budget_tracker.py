@@ -61,7 +61,8 @@ def check_budget(
             )
 
         return max(0, limit - number_of_requests)
-    elif unit == "runs":
+
+    if unit == "runs":
         run_ids = run_manager.get_runs(team_id)
 
         num_runs = len(run_ids)

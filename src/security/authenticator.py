@@ -76,8 +76,8 @@ class Authenticator:
     def authenticate_team(self, token: str):
         try:
             decoded_token = base64.b64decode(token.encode()).decode()
-        except (binascii.Error, UnicodeDecodeError):
-            raise RuntimeError("Token is not base64 encoded.")
+        except (binascii.Error, UnicodeDecodeError) as exc:
+            raise RuntimeError("Token is not base64 encoded.") from exc
 
         cursor = self.db_connection.execute(
             "SELECT id, token FROM teams;",
@@ -101,7 +101,8 @@ async def authenticate(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
         team_id = authenticator.authenticate_team(token)
     except RuntimeError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) \
+            from e
 
     if team_id is None:
         raise HTTPException(

@@ -49,8 +49,8 @@ class AssistantResponseMessage:
         {123: 456} to be accepted as valid citation values (the key is auto-cast
         to string).
 
-        To prevent this from happening, this validator examines each key of a supplied dict and rejects
-        it if it doesn't match.
+        To prevent this from happening, this validator examines each key of a
+        supplied dict and rejects it if it doesn't match.
         """
         if isinstance(value, dict):
             for k in value.keys():

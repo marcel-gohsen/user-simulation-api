@@ -99,11 +99,11 @@ class SharedTask(metaclass=ABCMeta):
             session.assistant_meta.append(copy.deepcopy(response.meta))
 
 
-"""
-==========================
-REPOSITORY OF SHARED TASKS
-==========================
-"""
+
+# ==========================
+# REPOSITORY OF SHARED TASKS
+# ==========================
+
 
 
 class DummySharedTask(SharedTask):
@@ -116,7 +116,7 @@ class DummySharedTask(SharedTask):
         self._add_topic(Topic("dummy1", "Why is the sky blue?"))
         self._add_topic(Topic("dummy2", "Why is the sky not green?"))
 
-        for _id, topic in self.topics.items():
+        for _id in self.topics:
             self._add_user(_id, DummyUser(self.topics))
             self._add_debug_user(_id, DummyUser(self.topics))
 
@@ -150,14 +150,14 @@ class TREC_iKAT25(SharedTask):
             )
 
     def _load_topics(self):
-        with open(self.topics_path, "r") as f:
+        with open(self.topics_path, "r", encoding="utf-8") as f:
             topics = json.load(f)
             for topic in topics:
                 self._add_topic(Topic(topic["number"], topic["title"]))
 
     def _load_users(self):
 
-        with open(self.users_path, "r") as f:
+        with open(self.users_path, "r", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=";")
             _ = next(reader)
             for row in reader:

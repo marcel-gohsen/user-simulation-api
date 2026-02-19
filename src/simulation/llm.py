@@ -86,7 +86,7 @@ class OpenAIModel(LLM):
     def batch_generate(
         self, messages: List[List[Dict[str, str]]], **kwargs
     ) -> List[str]:
-        raise NotImplemented()
+        raise NotImplementedError()
 
 
 class HFModel(LLM, metaclass=abc.ABCMeta):
@@ -142,7 +142,6 @@ class HFModel(LLM, metaclass=abc.ABCMeta):
             except ValueError as e:
                 self.logger.warning("Can't move model to cuda!")
                 self.logger.warning(e)
-                pass
 
     def tokenize_messages(self, messages: List[Dict[str, str] | List[Dict[str, str]]]):
         if isinstance(messages[0], list):
@@ -154,14 +153,14 @@ class HFModel(LLM, metaclass=abc.ABCMeta):
                 return_dict=True,
                 enable_thinking=False,
             ).to("cuda")
-        else:
-            return self.tokenizer.apply_chat_template(
-                messages,
-                return_tensors="pt",
-                add_generation_prompt=True,
-                return_dict=True,
-                enable_thinking=False,
-            ).to("cuda")
+
+        return self.tokenizer.apply_chat_template(
+            messages,
+            return_tensors="pt",
+            add_generation_prompt=True,
+            return_dict=True,
+            enable_thinking=False,
+        ).to("cuda")
 
     def generate(self, messages: List[Dict[str, str]], **kwargs) -> List[str]:
         inputs = self.tokenize_messages(messages)

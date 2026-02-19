@@ -27,11 +27,11 @@ debug_router = APIRouter(
     prefix=f"/{CONFIG['api']['debug']['name']}",
 )
 
-"""
-===========
-API ROUTES.
-===========
-"""
+
+# ===========
+# API ROUTES.
+# ===========
+
 
 
 @run_router.post(
@@ -75,7 +75,7 @@ def start(
     run_meta.team_id = team_id
 
     run = run_manager.create_run(run_meta)
-    logger.debug(f'Team "{team_id}" starts run "{run_meta.run_id}".')
+    logger.debug("Team \"%s\" starts run \"%s\".", team_id, run_meta.run_id)
     task_manager = SharedTaskManager()
     active_task = task_manager.active_task
 
@@ -86,7 +86,7 @@ def start(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail=f'Active run with the name "{run_meta.run_id}" already exists '
             f"or a run with that name was already completed before.",
-        )
+        ) from e
 
     user = active_task.users_by_id[session.user_id]
     utterance = user.initiate(session)
@@ -135,7 +135,7 @@ def continue_conversation(
                 CONFIG["api"][api]["limits"]["unit"],
             )
     except HTTPException as e:
-        # prevent running out of budget while working on the very last topic of the last allowed run/session
+        # prevent running out of budget while during last topic of the last allowed run/session
         check_request(
             team_id,
             assistant.run_id,
@@ -179,11 +179,13 @@ def continue_conversation(
             )
 
         logger.debug(
-            f'Team "{team_id}" starts new session on topic "{session.topic_id}".'
+            'Team "%s" starts new session on topic "%s".',
+            team_id, session.topic_id
         )
     else:
         logger.debug(
-            f'Team "{team_id}" continues session on topic "{session.topic_id}".'
+            'Team "%s" continues session on topic "%s".',
+            team_id, session.topic_id
         )
 
     user = active_task.users_by_id[session.user_id]
@@ -201,13 +203,8 @@ def continue_conversation(
             and session.history[-2]["role"] == "assistant"
         )
 
-    api = "run"
-    if debug_mode:
-        api = "debug"
-
     if not len(session.history) == 1:
-        request_tracker = RequestTracker()
-        request_tracker.register_request(
+        RequestTracker().register_request(
             run.run_meta.run_id,
             team_id,
             session.id,
@@ -224,8 +221,7 @@ def continue_conversation(
     if utterance.end_of_session:
         session_manager.terminate_session(run.run_meta)
 
-        request_tracker = RequestTracker()
-        request_tracker.register_request(
+        RequestTracker().register_request(
             run.run_meta.run_id,
             team_id,
             session.id,
@@ -253,10 +249,10 @@ def continue_conversation(
 
 @run_router.get("/session", **CONFIG["api"]["run"]["docs"]["session"])
 @debug_router.get("/session", **CONFIG["api"]["debug"]["docs"]["session"])
-def session(
+def get_session(
     request: Request, team_id: Annotated[str, Depends(authenticate)], run_id: str
 ):
-    debug_mode, logger = check_debug_mode(request)
+    debug_mode, _ = check_debug_mode(request)
 
     run_manager = RunManager(debug=debug_mode)
     check_request(
@@ -281,7 +277,7 @@ def session(
 
 
 @run_router.get("/status", **CONFIG["api"]["run"]["docs"]["status"])
-def run_status(team_id: Annotated[str, Depends(authenticate)], run_id: str):
+def run_status(_: Annotated[str, Depends(authenticate)], run_id: str):
     run_manager = RunManager()
 
     if not run_manager.run_exists(run_id):
@@ -307,7 +303,7 @@ def run_dump(team_id: Annotated[str, Depends(authenticate)], run_id: str):
 
 
 @run_router.get("/dump-all", **CONFIG["api"]["run"]["docs"]["dump-all"])
-def run_dump_all(credentials: Annotated[HTTPBasicCredentials, Depends(admin_auth)]):
+def run_dump_all(_: Annotated[HTTPBasicCredentials, Depends(admin_auth)]):
     run_manager = RunManager()
 
     response = "\n".join([json.dumps(s) for s in run_manager.dump_all()])
@@ -316,11 +312,11 @@ def run_dump_all(credentials: Annotated[HTTPBasicCredentials, Depends(admin_auth
     )
 
 
-"""
-===============
-HELPER METHODS.
-===============
-"""
+
+# ===============
+# HELPER METHODS.
+# ===============
+
 
 
 def check_debug_mode(request: Request) -> Tuple[bool, Logger]:
@@ -363,7 +359,8 @@ def check_request(
         if team_id != run_meta.team_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f'Run with the name "{run_meta.run_id}" does not belong to team "{team_id}".',
+                detail=f'Run with the name "{run_meta.run_id}" '
+                       f'does not belong to team "{team_id}".',
             )
     else:
         if len(run_meta.run_id) == 0:
@@ -381,7 +378,8 @@ def check_request(
         if run is not None or (run_manager.run_exists(run_id) and not debug_mode):
             raise HTTPException(
                 status_code=status.HTTP_412_PRECONDITION_FAILED,
-                detail=f'Active run with the name "{run_meta.run_id}" already exists or a run with that name was already completed before.',
+                detail=f'Active run with the name "{run_meta.run_id}" already exists or '
+                       f'a run with that name was already completed before.',
             )
 
         # check for the case where a request is submitted with a team name that doesn't match

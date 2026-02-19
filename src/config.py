@@ -9,11 +9,11 @@ CONFIG_PATH = "config/api-conf.yml"
 DATABASE_DIR = "database"
 SCHEMA_PATH = "data/db-schema.sql"
 
-with open(CONFIG_PATH, "r") as f:
-    CONFIG = yaml.load(f, Loader=yaml.SafeLoader)
+with open(CONFIG_PATH, "r", encoding="utf-8") as project_file:
+    CONFIG = yaml.load(project_file, Loader=yaml.SafeLoader)
 
-    with open("pyproject.toml", "rb") as f:
-        data = tomllib.load(f)
+    with open("pyproject.toml", "rb") as project_file:
+        data = tomllib.load(project_file)
         CONFIG["api"]["version"] = data["project"]["version"]
 
 
@@ -21,8 +21,8 @@ class ConfigChangeHandler(FileSystemEventHandler):
     def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
         super().on_modified(event)
         global CONFIG
-        with open(CONFIG_PATH, "r") as f:
-            CONFIG = yaml.load(f, Loader=yaml.SafeLoader)
+        with open(CONFIG_PATH, "r", encoding="utf-8") as config_file:
+            CONFIG = yaml.load(config_file, Loader=yaml.SafeLoader)
 
 
 observer = Observer()

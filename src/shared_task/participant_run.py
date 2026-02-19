@@ -39,12 +39,12 @@ class ParticipantRun:
         }
 
 
-class RunManager(object):
+class RunManager:
     _instance = None
     _debug_instance = None
     _lock = RLock()
 
-    def __new__(cls, debug: bool = False, *args, **kwargs):
+    def __new__(cls,  *args, debug: bool = False, **kwargs):
         with RunManager._lock:
             if debug:
                 if cls._debug_instance is None:
@@ -118,13 +118,15 @@ class RunManager(object):
             if team_id is None:
                 cursor.execute(
                     "SELECT * FROM runs WHERE id=? AND "
-                    "EXISTS(SELECT * FROM requests WHERE requests.run_id = runs.id AND requests.api = 'run')",
+                    "EXISTS(SELECT * FROM requests "
+                    "WHERE requests.run_id = runs.id AND requests.api = 'run')",
                     (run_id,),
                 )
             else:
                 cursor.execute(
                     "SELECT * FROM runs WHERE id=? AND runs.team_id=? AND "
-                    "EXISTS(SELECT * FROM requests WHERE requests.run_id = runs.id AND requests.api = 'run')",
+                    "EXISTS(SELECT * FROM requests "
+                    "WHERE requests.run_id = runs.id AND requests.api = 'run')",
                     (run_id, team_id),
                 )
             res = cursor.fetchone()

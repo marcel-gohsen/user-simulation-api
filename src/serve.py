@@ -1,3 +1,7 @@
+"""
+Main module to execute Sim.API.
+"""
+
 import logging
 import os.path
 import sqlite3
@@ -10,9 +14,14 @@ from starlette.responses import RedirectResponse
 from api import auth_router, budget_router, run_router
 from config import CONFIG, DATABASE_DIR, SCHEMA_PATH
 from shared_task.shared_task import SharedTaskManager
+from security.authenticator import Authenticator
 
 
 def setup_app() -> FastAPI:
+    """
+    Configure FastAPI app routes.
+    :return: FastAPI app.
+    """
     app = FastAPI(
         version=CONFIG["api"]["version"],
         title=CONFIG["api"]["title"],
@@ -33,8 +42,13 @@ def setup_app() -> FastAPI:
 
 
 def setup_storage(shared_task: str):
+    """
+    Configure internal Sqlite3 database storage for given shared task.
+    :param shared_task: Name of the configured shared task.
+    :return: None
+    """
     os.makedirs(DATABASE_DIR, exist_ok=True)
-    with open(SCHEMA_PATH, "r") as in_file:
+    with open(SCHEMA_PATH, "r", encoding="utf-8") as in_file:
         db_path = os.path.join(DATABASE_DIR, f"{shared_task}.db")
         with sqlite3.connect(db_path) as conn:
             _ = conn.executescript(in_file.read())
@@ -64,6 +78,14 @@ def setup_storage(shared_task: str):
     help="Select one of the preconfigured shared tasks.",
 )
 def main(admin_name: str, admin_password: str, shared_task: str):
+    """
+    Main function to set up and execute Sim.API.
+
+    :param admin_name: Username for the admin account.
+    :param admin_password: Password for the admin account.
+    :param shared_task: Name of the configured shared task.
+    :return: None
+    """
     format_string = "%(asctime)s - %(name)-20s - %(levelname)-7s - %(message)s"
     log_config = uvicorn.config.LOGGING_CONFIG
     log_config["formatters"]["access"]["fmt"] = format_string
@@ -83,8 +105,6 @@ def main(admin_name: str, admin_password: str, shared_task: str):
     task_manager.active_task.initialize()
 
     if admin_name is not None and admin_password is not None:
-        from security.authenticator import Authenticator
-
         authenticator = Authenticator()
         authenticator.add_admin(admin_name, admin_password)
         logger.info("Added admin credentials")
