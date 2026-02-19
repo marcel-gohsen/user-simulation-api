@@ -50,13 +50,14 @@ class DummyUser(User):
     def initiate(self, session: Session) -> UserUtterance:
         return UserUtterance(
             content=self.topics[session.topic_id].title,
-            end_of_session=False
+            end_of_session=False,
         )
 
     def respond(self, session: Session) -> UserUtterance:
         return UserUtterance(
             content="Thanks for your response!",
-            end_of_session=True
+            end_of_session=True,
+            meta={"dummy_meta": True}
         )
 
 

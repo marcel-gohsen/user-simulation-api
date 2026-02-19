@@ -4,6 +4,7 @@ from dataclasses import asdict
 
 import pytest
 from pydantic import ValidationError, TypeAdapter
+from starlette import status
 from starlette.testclient import TestClient
 
 from api.messages import UserUtteranceMessage, RunMetaMessage, AssistantResponseMessage
@@ -53,7 +54,7 @@ def test_run_start(client, team_token):
         json=asdict(run_meta)
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.content.decode("utf-8")
     try:
@@ -64,6 +65,7 @@ def test_run_start(client, team_token):
 
 @pytest.mark.integration
 def test_full_run(client, team_token):
+    # Register a run
     run_meta = RunMetaMessage("_test-run-full", "This is a test run.", extra={"test": True})
     response = client.post(
         "/run/start",
@@ -74,7 +76,7 @@ def test_full_run(client, team_token):
         json=asdict(run_meta)
     )
 
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
     data = response.content.decode("utf-8")
 
@@ -84,6 +86,7 @@ def test_full_run(client, team_token):
     except ValidationError as e:
         pytest.fail(f"API response is not valid!\n{str(e)}")
 
+    # Response submission loop
     while True:
         if utterance.last_response_of_run:
             break
@@ -92,7 +95,7 @@ def test_full_run(client, team_token):
             run_meta.run_id,
             "This is a test response!",
             {"docA": 0.9, "docB": 0.5},
-            {"comment": "This is test metadata."}
+            {"dummy_meta": "This is test metadata."}
         )
 
         response = client.post(
@@ -104,14 +107,38 @@ def test_full_run(client, team_token):
             json=asdict(assistant_response)
         )
 
-        assert response.status_code == 200
+        assert response.status_code == status.HTTP_200_OK
 
         data = response.content.decode("utf-8")
         try:
-
             utterance = TypeAdapter(UserUtteranceMessage).validate_json(data)
         except ValidationError as e:
             pytest.fail(f"API response is not valid!\n{str(e)}")
+
+    # Run complete
+    # Test for error on complete run
+    response = client.post(
+        "/run/continue",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {team_token}",
+        },
+        json=asdict(assistant_response)
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    # Test dumping of run file
+    response = client.get(
+        "/run/dump", params={"run_id": run_meta.run_id},
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {team_token}",
+        }
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
 
 
 @pytest.mark.integration
@@ -125,7 +152,7 @@ def test_malformed_request(client, team_token):
         json={"run_id": None}
     )
 
-    assert response.status_code == 422
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.integration
@@ -140,4 +167,4 @@ def test_unauthorized_request(client):
         json=asdict(run_meta)
     )
 
-    assert response.status_code == 401
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

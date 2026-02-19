@@ -1,3 +1,4 @@
+import copy
 import csv
 import importlib
 import json
@@ -85,10 +86,14 @@ class SharedTask(metaclass=ABCMeta):
     def update_session(cls, session: Session, utterance: Optional[UserUtterance] = None, response: Optional[AssistantResponseMessage] = None):
         if utterance is not None:
             session.history.append({"role": "user", "content": utterance.content})
+            session.user_meta.append(copy.deepcopy(utterance.meta))
+
         if response is not None:
             session.history.append(
                 {"role": "assistant", "content": response.response}
             )
+
+            session.assistant_meta.append(copy.deepcopy(response.meta))
 
 
 """
@@ -114,8 +119,8 @@ class DummySharedTask(SharedTask):
 
 
 class TREC_iKAT25(SharedTask):
-    topics_path = "data/2025_test_topics.json"
-    users_path = "data/simulation-data.csv"
+    topics_path = "data/trec-ikat25/2025_test_topics.json"
+    users_path = "data/trec-ikat25/simulation-data.csv"
 
     def __init__(self):
         super().__init__("trec-ikat25")

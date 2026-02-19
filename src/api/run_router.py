@@ -218,7 +218,7 @@ def continue_conversation(
             session.history[-3]["content"],
             assistant.response,
             assistant.citations,
-            session.user_meta[-1] if len(session.user_meta) > 0 else {},
+            session.user_meta[-2] if len(session.user_meta) > 1 else {},
             assistant.meta
         )
 

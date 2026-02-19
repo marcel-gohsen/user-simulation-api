@@ -158,51 +158,68 @@ class RunManager(object):
         return data
 
     def dump(self, run_id: str) -> Optional[List[Dict[str, Any]]]:
+        db_data = []
         with RunManager._lock:
             cursor = self.db_connection.execute(
-                "SELECT runs.team_id, runs.description, runs.track_persona, requests.topic_id, requests.user_utterance,requests.response, requests.citations, requests.ptkbs, requests.rubrik, requests.rubrik_score  FROM runs JOIN requests ON runs.id = requests.run_id WHERE runs.id=? AND requests.api='run' ORDER BY requests.timestamp;", (run_id,))
+                "SELECT "
+                "runs.team_id AS team_id, "
+                "description, "
+                "extra, "
+                "topic_id, "
+                "user_utterance,"
+                "user_meta,"
+                "assistant_response, "
+                "assistant_meta, "
+                "assistant_citations "
+                "FROM runs "
+                "JOIN requests ON runs.id = requests.run_id "
+                "WHERE runs.id=? AND requests.api='run' "
+                "ORDER BY requests.timestamp;",
+                (run_id,))
+
 
             requests = cursor.fetchall()
 
-        if len(requests) == 0:
+            column_names = [t[0] for t in cursor.description]
+            for r in requests:
+                db_data.append({k: v for k,v in zip(column_names, r)})
+
+        if len(db_data) == 0:
             return None
 
         metadata = {
-            "team_id": requests[0][0],
+            "team_id": db_data[0]["team_id"],
             "run_id": run_id,
-            "type": "interactive",
-            "description": requests[0][1],
-            "track_persona": requests[0][2],
+            "description": db_data[0]["description"],
+            "extra": json.loads(db_data[0]["extra"]),
         }
 
 
         responses_per_topic = {}
-        for req in requests:
-            if req[3] not in responses_per_topic:
-                responses_per_topic[req[3]] = []
+        for request in db_data:
+            if request["topic_id"] not in responses_per_topic:
+                responses_per_topic[request["topic_id"]] = []
 
-            responses_per_topic[req[3]].append(req)
+            responses_per_topic[request["topic_id"]].append(request)
 
-        data = []
+        out_data = []
         for topic_id, responses in responses_per_topic.items():
             for i, response in enumerate(responses):
-                data.append({
+                out_data.append({
                     "metadata": {**metadata, "topic_id": f"{topic_id}_{i + 1}"},
                     "responses": [
                         {
                             "rank": 1,
-                            "user_utterance": response[4],
-                            "user_rubrik": response[8],
-                            "user_rubrik_score": response[9],
-                            "text": response[5],
-                            "citations": json.loads(response[6]),
-                            "ptkb_provenance": json.loads(response[7]),
+                            "user_utterance": response["user_utterance"],
+                            "user_meta": json.loads(response["user_meta"]),
+                            "assistant_text": response["assistant_response"],
+                            "assistant_citations": json.loads(response["assistant_citations"]),
+                            "assistant_meta": json.loads(response["assistant_meta"]),
                         }
-                    ],
-                    "references": json.loads(response[6])
+                    ]
                 })
 
-        return data
+        return out_data
 
 
 
