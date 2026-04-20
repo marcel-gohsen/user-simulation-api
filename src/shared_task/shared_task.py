@@ -99,11 +99,9 @@ class SharedTask(metaclass=ABCMeta):
             session.assistant_meta.append(copy.deepcopy(response.meta))
 
 
-
 # ==========================
 # REPOSITORY OF SHARED TASKS
 # ==========================
-
 
 
 class DummySharedTask(SharedTask):

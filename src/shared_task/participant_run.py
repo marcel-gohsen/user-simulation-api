@@ -44,7 +44,7 @@ class RunManager:
     _debug_instance = None
     _lock = RLock()
 
-    def __new__(cls,  *args, debug: bool = False, **kwargs):
+    def __new__(cls, *args, debug: bool = False, **kwargs):
         with RunManager._lock:
             if debug:
                 if cls._debug_instance is None:

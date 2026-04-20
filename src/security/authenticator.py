@@ -101,8 +101,9 @@ async def authenticate(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
         team_id = authenticator.authenticate_team(token)
     except RuntimeError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) \
-            from e
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
 
     if team_id is None:
         raise HTTPException(

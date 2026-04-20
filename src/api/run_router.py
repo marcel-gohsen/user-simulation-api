@@ -33,7 +33,6 @@ debug_router = APIRouter(
 # ===========
 
 
-
 @run_router.post(
     "/start",
     response_model=UserUtteranceMessage,
@@ -75,7 +74,7 @@ def start(
     run_meta.team_id = team_id
 
     run = run_manager.create_run(run_meta)
-    logger.debug("Team \"%s\" starts run \"%s\".", team_id, run_meta.run_id)
+    logger.debug('Team "%s" starts run "%s".', team_id, run_meta.run_id)
     task_manager = SharedTaskManager()
     active_task = task_manager.active_task
 
@@ -179,13 +178,11 @@ def continue_conversation(
             )
 
         logger.debug(
-            'Team "%s" starts new session on topic "%s".',
-            team_id, session.topic_id
+            'Team "%s" starts new session on topic "%s".', team_id, session.topic_id
         )
     else:
         logger.debug(
-            'Team "%s" continues session on topic "%s".',
-            team_id, session.topic_id
+            'Team "%s" continues session on topic "%s".', team_id, session.topic_id
         )
 
     user = active_task.users_by_id[session.user_id]
@@ -312,11 +309,9 @@ def run_dump_all(_: Annotated[HTTPBasicCredentials, Depends(admin_auth)]):
     )
 
 
-
 # ===============
 # HELPER METHODS.
 # ===============
-
 
 
 def check_debug_mode(request: Request) -> Tuple[bool, Logger]:
@@ -360,7 +355,7 @@ def check_request(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f'Run with the name "{run_meta.run_id}" '
-                       f'does not belong to team "{team_id}".',
+                f'does not belong to team "{team_id}".',
             )
     else:
         if len(run_meta.run_id) == 0:
@@ -379,7 +374,7 @@ def check_request(
             raise HTTPException(
                 status_code=status.HTTP_412_PRECONDITION_FAILED,
                 detail=f'Active run with the name "{run_meta.run_id}" already exists or '
-                       f'a run with that name was already completed before.',
+                f"a run with that name was already completed before.",
             )
 
         # check for the case where a request is submitted with a team name that doesn't match
