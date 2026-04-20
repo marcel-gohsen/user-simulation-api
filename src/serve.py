@@ -20,6 +20,7 @@ from security.authenticator import Authenticator
 def setup_app() -> FastAPI:
     """
     Configure FastAPI app routes.
+
     :return: FastAPI app.
     """
     app = FastAPI(
@@ -44,6 +45,7 @@ def setup_app() -> FastAPI:
 def setup_storage(shared_task: str):
     """
     Configure internal Sqlite3 database storage for given shared task.
+
     :param shared_task: Name of the configured shared task.
     :return: None
     """

@@ -1,3 +1,7 @@
+"""
+Module for handling API configuration parsing.
+"""
+
 import tomllib
 
 import yaml
@@ -18,6 +22,9 @@ with open(CONFIG_PATH, "r", encoding="utf-8") as project_file:
 
 
 class ConfigChangeHandler(FileSystemEventHandler):
+    """Handler that parses and updates the
+    configuration whenever the config file is updated."""
+
     def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
         super().on_modified(event)
         global CONFIG

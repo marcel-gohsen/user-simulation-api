@@ -1,3 +1,8 @@
+"""
+Module that contains all routes that pertains to run submissions
+or participant playground methods.
+"""
+
 import datetime
 import json
 import logging
@@ -48,6 +53,14 @@ def start(
     team_id: Annotated[str, Depends(authenticate)],
     run_meta: RunMetaMessage,
 ) -> UserUtteranceMessage:
+    """
+    Registers a new run and provides first user utterance.
+
+    :param request: HTTP request object.
+    :param team_id: ID of the team as a result of the authentication.
+    :param run_meta: Metadata object about the run to be registerred.
+    :return: :class:`UserUtteranceMessage` object containing a user utterance.
+    """
     debug_mode, logger = check_debug_mode(request)
     api = "run"
     if debug_mode:
@@ -77,6 +90,7 @@ def start(
     logger.debug('Team "%s" starts run "%s".', team_id, run_meta.run_id)
     task_manager = SharedTaskManager()
     active_task = task_manager.active_task
+    assert active_task is not None
 
     try:
         session = active_task.init_session(run, debug_mode)
@@ -86,6 +100,8 @@ def start(
             detail=f'Active run with the name "{run_meta.run_id}" already exists '
             f"or a run with that name was already completed before.",
         ) from e
+
+    assert session is not None
 
     user = active_task.users_by_id[session.user_id]
     utterance = user.initiate(session)
@@ -117,7 +133,16 @@ def continue_conversation(
     request: Request,
     team_id: Annotated[str, Depends(authenticate)],
     assistant: AssistantResponseMessage,
-):
+) -> UserUtteranceMessage:
+    """
+    Continues registered run by recording system response and
+    producing next user utterance.
+
+    :param request: HTTP request object.
+    :param team_id: ID of the team as a result of the authentication.
+    :param assistant: :class:`AssistantResponseMessage` object containing a system response.
+    :return: :class:`UserUtteranceMessage` object containing a user utterance.
+    """
     debug_mode, logger = check_debug_mode(request)
     api = "run"
     if debug_mode:
@@ -134,7 +159,7 @@ def continue_conversation(
                 CONFIG["api"][api]["limits"]["unit"],
             )
     except HTTPException as e:
-        # prevent running out of budget while during last topic of the last allowed run/session
+        # prevent running out of budget during last topic of the last allowed run/session
         check_request(
             team_id,
             assistant.run_id,
@@ -244,11 +269,23 @@ def continue_conversation(
     )
 
 
-@run_router.get("/session", **CONFIG["api"]["run"]["docs"]["session"])
+@run_router.get(
+    "/session",
+    response_model=UserUtteranceMessage,
+    **CONFIG["api"]["run"]["docs"]["session"],
+)
 @debug_router.get("/session", **CONFIG["api"]["debug"]["docs"]["session"])
 def get_session(
     request: Request, team_id: Annotated[str, Depends(authenticate)], run_id: str
-):
+) -> UserUtteranceMessage:
+    """
+    Returns the currently active session (conversation).
+
+    :param request: HTTP request object.
+    :param team_id: ID of the team as a result of the authentication.
+    :param run_id: ID of the run for which the session is to be returned.
+    :return: :class:`UserUtteranceMessage` object of the currently active session.
+    """
     debug_mode, _ = check_debug_mode(request)
 
     run_manager = RunManager(debug=debug_mode)
@@ -275,6 +312,19 @@ def get_session(
 
 @run_router.get("/status", **CONFIG["api"]["run"]["docs"]["status"])
 def run_status(_: Annotated[str, Depends(authenticate)], run_id: str):
+    """
+    Returns the status of a given run, describing whether a run is "inactive",
+    "active" or "complete" and listing the open and done topic ids.
+
+    - Run status "complete" means that all topics have been worked on and the run is submitted successfully.
+    - Run status "active" means that there are still open topics until the run is "complete".
+    - Run status "inactive" means that there are still open topics until the run is "complete" and the
+      run was retired (maybe caused by an outage). Run will be activated again at call to :func:`continue_conversation()`
+
+    :param _: ID of the team as a result of the authentication.
+    :param run_id: ID of the run for which the status is to be returned.
+    :return: JSONResponse object of the current status of the run.
+    """
     run_manager = RunManager()
 
     if not run_manager.run_exists(run_id):
@@ -286,7 +336,14 @@ def run_status(_: Annotated[str, Depends(authenticate)], run_id: str):
 
 
 @run_router.get("/dump", **CONFIG["api"]["run"]["docs"]["dump"])
-def run_dump(team_id: Annotated[str, Depends(authenticate)], run_id: str):
+def run_dump(team_id: Annotated[str, Depends(authenticate)], run_id: str) -> Response:
+    """
+    Return a submitted run as a TREC-formatted run file as line-delimited JSON.
+
+    :param team_id: ID of the team as a result of the authentication.
+    :param run_id: ID of the run for which the run file should be created.
+    :return: TREC-style run file in line-delimited JSON format.
+    """
     run_manager = RunManager()
     if not run_manager.run_exists(run_id, team_id):
         raise HTTPException(
@@ -315,6 +372,14 @@ def run_dump_all(_: Annotated[HTTPBasicCredentials, Depends(admin_auth)]):
 
 
 def check_debug_mode(request: Request) -> Tuple[bool, Logger]:
+    """
+    Parses from the request url whether the request was submitted
+    to run or playground routes.
+
+    :param request: HTTP request object.
+    :return: A tuple of true/false whether debug is on/off and of the
+    corresponding logger instance.
+    """
     debug_mode = "debug" in request.url.path
 
     if debug_mode:
@@ -335,6 +400,18 @@ def check_request(
     run_must_exists: bool = False,
     debug_mode: bool = False,
 ) -> bool:
+    """
+    Tests whether a request is valid.
+
+    :param team_id: ID of a team.
+    :param run_id: ID of a run.
+    :param run_meta: Metadata object of a run.
+    :param run_manager: RunManager object.
+    :param run_must_exists: A flag indicating whether a run has to exists.
+    :param debug_mode: A flag indicating whether debug mode is enabled.
+    :return: True if request is valid
+    :raises HTTPException: If request is invalid.
+    """
     run = run_manager.get_active_run(run_id)
 
     if run_must_exists:
